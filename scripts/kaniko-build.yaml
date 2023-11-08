@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kaniko-flyte-01
+  namespace: kaniko
+spec:
+  ttlSecondsAfterFinished: 120
+  backoffLimit: 2
+  activeDeadlineSeconds: 3600
+  template:
+    spec:
+      serviceAccountName: kaniko
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+        - "--dockerfile=/git-repo/containers/base.Dockerfile"
+        - "--context=dir:///git-repo/"
+        - "--cache"
+        - "--destination=us.gcr.io/project/pipelines/flyte-template:d48803e17fe1f7febfa2e6212e5f717a30c06ec8"
+        - "--destination=ghcr.io/cameronraysmith/flyte-template:d48803e17fe1f7febfa2e6212e5f717a30c06ec8"
+        - "--compressed-caching=false"
+        - "--use-new-run=true"
+        - "--snapshot-mode=redo"
+        - "--build-arg"
+        - "tag=d48803e17fe1f7febfa2e6212e5f717a30c06ec8"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+            ephemeral-storage: "15Gi"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+        volumeMounts:
+        - name: git-repo
+          mountPath: /git-repo
+        - name: docker-config
+          mountPath: /kaniko/.docker/
+          readOnly: true
+      initContainers:
+      - name: git-clone
+        image: alpine/git
+        env:
+          - name: GIT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-access-token
+                key: github_token
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Using GIT_TOKEN to clone repository"
+            git clone --single-branch --branch=main "https://${GIT_TOKEN}:x-oauth-basic@github.com/cameronraysmith/flyte-template.git" /git-repo
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+            ephemeral-storage: "5Gi"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: git-repo
+          mountPath: /git-repo
+      restartPolicy: Never
+      volumes:
+      - name: git-repo
+        emptyDir: {}
+      - name: docker-config
+        secret:
+          secretName: container-registry-auth
+          items:
+          - key: config.json
+            path: config.json
