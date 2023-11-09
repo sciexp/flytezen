@@ -55,26 +55,29 @@ jobs:
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: sciexp-runners
     steps:
-    - name: Setup tmate debug session
-      if: ${{ github.event.inputs.debug_enabled }}
-      uses: mxschmitt/action-tmate@v3
+    - run: echo $(pwd)
     - name: Setup Runner for Argo
       run: |
         cd $HOME
-        echo "Install argo"
+        sudo apt-get update && sudo apt-get install -y curl
         curl -sLO https://github.com/argoproj/argo-workflows/releases/download/${ARGO_VERSION}/argo-linux-amd64.gz
         gunzip argo-linux-amd64.gz
         chmod +x argo-linux-amd64
         sudo mv ./argo-linux-amd64 /usr/local/bin/argo
         argo version
+    - run: echo $(pwd)
     - name: Check out repository code
       uses: actions/checkout@v3
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v4
+    - run: echo $(pwd)
     - run: echo ${GITHUB_REPOSITORY}
     - run: echo ${GITHUB_REPOSITORY_NAME_PART}
     - run: echo ${GITHUB_SERVER_URL}
     - run: echo ${GITHUB_REPOSITORY_OWNER_PART_SLUG}
+    - name: Setup tmate debug session
+      if: ${{ github.event.inputs.debug_enabled }}
+      uses: mxschmitt/action-tmate@v3
     - name: build
       run: |
         echo "commit sha $GITHUB_SHA"
