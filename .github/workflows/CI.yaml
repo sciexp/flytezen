@@ -77,7 +77,7 @@ jobs:
         WORKFLOW_NAME: ${{ secrets.WORKFLOW_NAME }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
   
     - name: Install flytectl
       uses: unionai-oss/flytectl-setup-action@master
@@ -98,7 +98,7 @@ jobs:
           pip list
 
     - name: Download Flyte config
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
           name: flyte-config
           path: .
