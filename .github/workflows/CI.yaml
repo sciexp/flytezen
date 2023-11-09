@@ -41,7 +41,7 @@ jobs:
       config-path: ${{ steps.config-output.outputs.path }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Create Flyte config from YAML template
       id: yq-process
@@ -61,7 +61,7 @@ jobs:
 
     - name: Upload Flyte config as an artifact
       id: config-output
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: flyte-config
         path: config.yaml
