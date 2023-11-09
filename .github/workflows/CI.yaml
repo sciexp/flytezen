@@ -94,14 +94,15 @@ jobs:
 
     - name: Setup Flytekit
       run: |
-          pip install -r requirements.txt
-          pip list
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip list
 
     - name: Download Flyte config
       uses: actions/download-artifact@v3
       with:
-          name: flyte-config
-          path: .
+        name: flyte-config
+        path: .
 
     - name: Setup tmate debug session
       if: ${{ github.event.inputs.debug_enabled }}
