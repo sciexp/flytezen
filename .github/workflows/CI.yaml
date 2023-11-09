@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup-flyte-config:
+  config:
     runs-on: ubuntu-latest
     outputs:
       config-path: ${{ steps.config-output.outputs.path }}
@@ -65,10 +65,6 @@ jobs:
       with:
         name: flyte-config
         path: config.yaml
-
-    - name: Setup tmate debug session
-      if: ${{ github.event.inputs.debug_enabled }}
-      uses: mxschmitt/action-tmate@v3
 
   deploy:
     needs: setup-flyte-config
