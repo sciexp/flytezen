@@ -31,6 +31,14 @@ on:
         type: boolean
         default: false
 
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pre_job:
     runs-on: ubuntu-latest
@@ -38,14 +46,18 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
     - id: skip_check
-      uses: fkirc/skip-duplicate-actions@v3.4.0
+      uses: fkirc/skip-duplicate-actions@v5
       with:
         skip_after_successful_duplicate: 'true'
+
   build:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: sciexp-runners
     steps:
+    - name: Setup tmate debug session
+      if: ${{ github.event.inputs.debug_enabled }}
+      uses: mxschmitt/action-tmate@v3
     - name: Setup Runner for Argo
       run: |
         cd $HOME
@@ -55,9 +67,6 @@ jobs:
         chmod +x argo-linux-amd64
         sudo mv ./argo-linux-amd64 /usr/local/bin/argo
         argo version
-    - name: Setup tmate debug session
-      if: ${{ github.event.inputs.debug_enabled }}
-      uses: mxschmitt/action-tmate@v3
     - name: Check out repository code
       uses: actions/checkout@v3
     - name: Inject slug/short variables
