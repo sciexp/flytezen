@@ -64,13 +64,13 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: flyte-config
-        path: config.yaml
+        path: ${{ secrets.FLYTECTL_CONFIG }}
 
   deploy:
     needs: config
     runs-on: ubuntu-latest
     env:
-        FLYTECTL_CONFIG: ${{ needs.config.outputs.config-path }}
+        FLYTECTL_CONFIG: ${{ secrets.FLYTECTL_CONFIG }}
         FLYTE_OAUTH_CLIENT_SECRET: ${{ secrets.FLYTE_OAUTH_CLIENT_SECRET }}
         WORKFLOW_PROJECT: ${{ secrets.WORKFLOW_PROJECT }}
         WORKFLOW_DOMAIN: ${{ secrets.WORKFLOW_DOMAIN }}
