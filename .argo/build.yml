@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  namespace: argo
+spec:
+  entrypoint: main
+  serviceAccountName: argo-server
+  templates:
+    - name: main
+      steps:
+        - - name: publish-container
+            templateRef:
+              name: cwft-kaniko
+              template: build-push-https
+              clusterScope: true
+            arguments:
+              parameters:
+                - name: appName
+                  value: '{{workflow.parameters.appName}}'
+                - name: branch
+                  value: '{{workflow.parameters.branch}}'
+                - name: containerRegistryURL1
+                  value: '{{workflow.parameters.containerRegistryURL1}}'
+                - name: containerRegistryURL2
+                  value: '{{workflow.parameters.containerRegistryURL2}}'
+                - name: gitUrlNoProtocol
+                  value: '{{workflow.parameters.gitUrlNoProtocol}}'
+                - name: containerFilePath
+                  value: '{{workflow.parameters.containerFilePath}}'
