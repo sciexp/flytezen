@@ -36,4 +36,4 @@ spec:
                 - name: cpuLimit
                   value: "4" # override default: 2
                 - name: storageRequest
-                  value: "200Gi" # override default: 15Gi
+                  value: "20Gi" # override default: 15Gi
