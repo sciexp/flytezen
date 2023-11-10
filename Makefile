@@ -107,6 +107,8 @@ package_and_register: package_workflows register_workflows
 ci: ## Run CI with debug enabled.
 	gh workflow run "CI" --ref main -f debug_enabled=true
 
+build: ## Build docker image.
+	gh workflow run "Build" --ref main -f debug_enabled=true
 
 #-------------
 # system / dev
