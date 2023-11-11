@@ -81,11 +81,12 @@ jobs:
         argo version --short
         argo submit .argo/build.yaml \
           --generate-name="${GITHUB_REPOSITORY_NAME_PART}-build-${GITHUB_SHA_SHORT}-" \
+          -p imageName1="${GITHUB_REPOSITORY_NAME_PART}" \
+          -p containerFilePath1="containers/base.Dockerfile" \
           -p appName="${GITHUB_REPOSITORY_NAME_PART}" \
           -p branch="${GITHUB_REF_NAME}" \
-          -p containerFilePath="containers/base.Dockerfile" \
-          -p containerRegistryURL1="${CONTAINER_REGISTRY_URL1}/${GITHUB_REPOSITORY_NAME_PART}:${GITHUB_SHA_SHORT}" \
-          -p containerRegistryURL2="${CONTAINER_REGISTRY_URL2}/${GITHUB_REPOSITORY_NAME_PART}:${GITHUB_SHA_SHORT}" \
-          -p gitUrlNoProtocol="github.com/${GITHUB_REPOSITORY_OWNER_PART_SLUG}" \
           -p shortSha="${GITHUB_SHA_SHORT}" \
+          -p containerRegistryURL1="${CONTAINER_REGISTRY_URL1}" \
+          -p containerRegistryURL2="${CONTAINER_REGISTRY_URL2}" \
+          -p gitUrlNoProtocol="github.com/${GITHUB_REPOSITORY_OWNER_PART_SLUG}" \
           --wait --log
