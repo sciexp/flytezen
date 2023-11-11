@@ -2,7 +2,7 @@ name: Build
 env:
   ARGO_NAMESPACE: argo
   ARGO_VERSION: v3.5.1
-  CONTAINER_REGISTRY_URL1: 'us.gcr.io/project/pipelines'
+  CONTAINER_REGISTRY_URL1: ${{ secrets.GCP_ARTIFACT_REGISTRY_PATH }}
   CONTAINER_REGISTRY_URL2: 'ghcr.io/sciexp'
 
 on:
