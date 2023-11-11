@@ -55,6 +55,10 @@ get_workflows: ## Get list of all workflows in a project-domain pair.
 		--project $(WORKFLOW_PROJECT) \
 		--domain $(WORKFLOW_DOMAIN)
 
+GIT_SHORT_SHA = $(shell git rev-parse --short HEAD)
+GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
+WORKFLOW_VERSION ?= $(GH_REPO_NAME)-$(GIT_BRANCH)-$(GIT_SHORT_SHA)
+
 get_workflow: ## Get workflow representation ( dot, yaml, doturl, json ).
 	@printf "\033[1;34m\n$$WORKFLOW_NAME:\n\n\033[0m"
 	@echo "config file: $$FLYTECTL_CONFIG"
@@ -79,13 +83,19 @@ get_executions: ## Get all executions ( table, excluded from flyte_info ).
 		--project $(WORKFLOW_PROJECT) \
 		--domain $(WORKFLOW_DOMAIN)
 
+WORKFLOW_IMAGE_TAG ?= $(GIT_SHORT_SHA)
+
 package_workflows: ## Package workflows.
 	@printf "\033[1;34m\nPACKAGE WORKFLOWS:\n\n\033[0m"
 	@echo "config file: $$FLYTECTL_CONFIG"
+	@echo "git branch: $(GIT_BRANCH)"
+	@echo "git commit: $(GIT_SHORT_SHA)"
+	@echo "workflow image: $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG)"
+	@echo "workflow version: $(WORKFLOW_VERSION)"
 	pyflyte \
 		--pkgs workflows \
 		package \
-		--image $(WORKFLOW_IMAGE) \
+		--image $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) \
 		--force
 
 register_workflows: ## Register workflows.
@@ -95,7 +105,7 @@ register_workflows: ## Register workflows.
 		--project $(WORKFLOW_PROJECT) \
 		--domain $(WORKFLOW_DOMAIN) \
 		--archive flyte-package.tgz \
-		--version "$$(git rev-parse HEAD)"
+		--version "$(WORKFLOW_VERSION)"
 
 package_and_register: ## Package and register workflows.
 package_and_register: package_workflows register_workflows 
@@ -104,8 +114,17 @@ package_and_register: package_workflows register_workflows
 # CI
 #-------------
 
+browse: ## Open github repo in browser at HEAD commit.
+	gh browse $(GIT_SHORT_SHA)
+
+workflow_ci: ## Open CI workflow summary.
+	gh workflow view "CI"
+
 ci: ## Run CI with debug enabled.
 	gh workflow run "CI" --ref main -f debug_enabled=true
+
+workflow_build: ## Open Build workflow summary.
+	gh workflow view "Build"
 
 build: ## Build docker image.
 	gh workflow run "Build" --ref main -f debug_enabled=true
