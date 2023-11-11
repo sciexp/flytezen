@@ -44,7 +44,7 @@ permissions:
   contents: read
 
 jobs:
-  pre_job:
+  skip-duplicate-runs:
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
@@ -55,8 +55,8 @@ jobs:
         skip_after_successful_duplicate: 'true'
 
   build:
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    needs: skip-duplicate-runs
+    if: ${{ needs.skip-duplicate-runs.outputs.should_skip != 'true' }}
     runs-on: sciexp-runners
     steps:
     - name: Setup Runner for Argo
