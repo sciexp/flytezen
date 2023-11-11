@@ -1,6 +1,9 @@
 # flyte config file
 config.yaml
 
+# hydra outputs
+outputs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
