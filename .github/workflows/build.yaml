@@ -23,13 +23,6 @@ on:
         required: true
         type: boolean
         default: false
-  workflow_call:
-    inputs:
-      debug_enabled:
-        description: "Run with tmate.io debugging enabled"
-        required: true
-        type: boolean
-        default: false
 
 defaults:
   run:
@@ -73,7 +66,7 @@ jobs:
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v4
     - name: Setup tmate debug session
-      if: ${{ github.event.inputs.debug_enabled }}
+      if: ${{ github.event.inputs.debug_enabled == 'true' }}
       uses: mxschmitt/action-tmate@v3
     - name: build
       run: |
