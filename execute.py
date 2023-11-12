@@ -1,20 +1,29 @@
+import importlib
 import os
 import subprocess
 
 from dotenv import load_dotenv
-from flytekit.configuration import Config
+from flytekit.configuration import Config, SerializationSettings, ImageConfig
 from flytekit.remote import FlyteRemote
 from hydra_zen import make_config, store, to_yaml, zen
+
+# builds = make_custom_builds_fn(populate_full_signature=True)
+# pbuilds = make_custom_builds_fn(zen_partial=True, populate_full_signature=True)
 
 load_dotenv()
 
 WORKFLOW_PROJECT = os.getenv("WORKFLOW_PROJECT")
 WORKFLOW_DOMAIN = os.getenv("WORKFLOW_DOMAIN")
 WORKFLOW_NAME = os.getenv("WORKFLOW_NAME")
+WORKFLOW_IMAGE = os.getenv("WORKFLOW_IMAGE")
 
-if not (WORKFLOW_PROJECT and WORKFLOW_DOMAIN and WORKFLOW_NAME):
+if not (WORKFLOW_PROJECT and WORKFLOW_DOMAIN and WORKFLOW_NAME and WORKFLOW_IMAGE):
     raise ValueError(
-        "WORKFLOW_PROJECT, WORKFLOW_DOMAIN, and WORKFLOW_NAME must be set in the .env file"
+        "WORKFLOW_PROJECT,"
+        "WORKFLOW_DOMAIN,"
+        "WORKFLOW_NAME,"
+        "WORKFLOW_IMAGE,"
+        "must all be set in the .env file"
     )
 
 # -------------------
@@ -41,22 +50,36 @@ def git_info_to_workflow_version():
     )
     repo_name = remote_url.split("/")[-1].rstrip(".git")
 
-    return f"{repo_name}-{git_branch}-{git_short_sha}"
+    return repo_name, git_branch, git_short_sha
 
 
-# builds = make_custom_builds_fn(populate_full_signature=True)
-# pbuilds = make_custom_builds_fn(zen_partial=True, populate_full_signature=True)
+repo_name, git_branch, git_short_sha = git_info_to_workflow_version()
+WORKFLOW_VERSION = f"{repo_name}-{git_branch}-{git_short_sha}"
+
+
+def load_workflow(workflow_name: str):
+    package_name, module_name, func_name = workflow_name.split(".")
+    workflow_module = importlib.import_module(f"{package_name}.{module_name}")
+    return getattr(workflow_module, func_name)
+
 
 FlyteConfig = make_config(
-    WORKFLOW_PROJECT=WORKFLOW_PROJECT,
-    WORKFLOW_DOMAIN=WORKFLOW_DOMAIN,
-    WORKFLOW_NAME=WORKFLOW_NAME,
-    WORKFLOW_VERSION=git_info_to_workflow_version(),
-    INPUTS={"hyperparameters": {"C": 0.2}},
+    name=WORKFLOW_NAME,
+    project=WORKFLOW_PROJECT,
+    domain=WORKFLOW_DOMAIN,
+    version=WORKFLOW_VERSION,
+    image=WORKFLOW_IMAGE,
+    tag=git_short_sha,
+    inputs={"hyperparameters": {"C": 0.2}},
 )
 
 flyte_config_store = store(group="workflow")
 flyte_config_store(FlyteConfig, name="flyte_config")
+
+
+# ----------------
+# execute workflow
+# ----------------
 
 
 @store(
@@ -64,26 +87,32 @@ flyte_config_store(FlyteConfig, name="flyte_config")
     hydra_defaults=["_self_", {"workflow": "flyte_config"}],
 )
 def task_function(workflow):
-    print("Executing Flyte workflow")
     print(to_yaml(workflow))
 
-    print("Flyte configuration")
-    flyte_config = Config.auto()
-    remote = FlyteRemote(config=flyte_config)
-
-    flyte_wf = remote.fetch_workflow(
-        project=workflow.WORKFLOW_PROJECT,
-        domain=workflow.WORKFLOW_DOMAIN,
-        name=workflow.WORKFLOW_NAME,
-        version=workflow.WORKFLOW_VERSION,
+    entity = load_workflow(workflow.name)
+    remote = FlyteRemote(
+        config=Config.auto(),
+        default_project=workflow.project,
+        default_domain=workflow.domain,
     )
 
-    print(flyte_wf.name)
+    print(f"Registering workflow:\n\n\t{workflow.name}\n")
+    serialization_settings = SerializationSettings(
+        ImageConfig.auto(img_name=f"{workflow.image}:{workflow.tag}")
+    )
+    remote.register_workflow(
+        entity=entity,
+        serialization_settings=serialization_settings,
+        version=workflow.version,
+    )
+
+    print(f"Executing workflow:\n\n\t{workflow.name}\n")
     remote.execute(
-        entity=flyte_wf,
-        inputs=workflow.INPUTS,
-        project=workflow.WORKFLOW_PROJECT,
-        domain=workflow.WORKFLOW_DOMAIN,
+        entity=entity,
+        version=workflow.version,
+        inputs=workflow.inputs,
+        wait=True,
+        execution_name_prefix=workflow.version,
     )
 
 
