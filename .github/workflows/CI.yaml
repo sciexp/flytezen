@@ -99,6 +99,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
   
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v4
+
     - name: Install flytectl
       uses: unionai-oss/flytectl-setup-action@master
       with:
@@ -133,3 +136,14 @@ jobs:
       id: execute
       run: |
         make run
+
+    - name: Create hydra outputs tarball
+      run: |
+        tar -czf hydra_outputs_${GITHUB_SHA_SHORT}.tar.gz ./outputs/
+        tar -tzf hydra_outputs_${GITHUB_SHA_SHORT}.tar.gz
+
+    - name: Upload hydra outputs artifact 
+      uses: actions/upload-artifact@v3
+      with:
+        name: hydra-outputs
+        path: hydra_outputs_${GITHUB_SHA_SHORT}.tar.gz
