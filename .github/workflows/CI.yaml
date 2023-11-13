@@ -106,7 +106,7 @@ jobs:
         path: .
 
     - name: Setup tmate debug session
-      if: ${{ github.event.inputs.debug_enabled }}
+      if: ${{ github.event.inputs.debug_enabled == 'true' }}
       uses: mxschmitt/action-tmate@v3
   
     # - name: Register workflow
