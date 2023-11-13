@@ -125,7 +125,9 @@ def get_user_input(input_queue):
     input_queue.put(user_input)
 
 
-def wait_for_workflow_completion(execution: FlyteWorkflowExecution, remote: FlyteRemote, logger: logging.Logger) -> None:
+def wait_for_workflow_completion(
+    execution: FlyteWorkflowExecution, remote: FlyteRemote, logger: logging.Logger
+) -> None:
     """
     Waits for the execution to complete, checking status at regular intervals.
     """

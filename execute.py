@@ -3,18 +3,20 @@ import os
 import rich.syntax
 import rich.tree
 from dotenv import load_dotenv
-from flytekit.configuration import Config, ImageConfig, SerializationSettings
+from flytekit.configuration import Config as FlyteConfig
+from flytekit.configuration import ImageConfig, SerializationSettings
 from flytekit.remote import FlyteRemote
 from hydra_zen import make_config, store, to_yaml, zen
 
 from execution_utils import (
-    configure_logging,
-    configure_hydra,
     check_required_env_vars,
+    configure_hydra,
+    configure_logging,
     git_info_to_workflow_version,
     load_workflow,
     wait_for_workflow_completion,
 )
+
 
 @store(
     name="workflow_execution",
@@ -34,7 +36,7 @@ def execute_workflow(workflow):
 
     entity = load_workflow(workflow.name)
     remote = FlyteRemote(
-        config=Config.auto(),
+        config=FlyteConfig.auto(),
         default_project=workflow.project,
         default_domain=workflow.domain,
     )
@@ -74,7 +76,7 @@ if __name__ == "__main__":
             "WORKFLOW_NAME",
             "WORKFLOW_IMAGE",
         ],
-        logger
+        logger,
     ) or exit(1)
 
     configure_hydra()
@@ -89,8 +91,8 @@ if __name__ == "__main__":
         version=workflow_version,
         image=os.environ.get("WORKFLOW_IMAGE"),
         tag=git_short_sha,
-        inputs={"hyperparameters": {"C": 0.2}},
         wait=False,
+        inputs={"hyperparameters": {"C": 0.2}},
     )
 
     workflow_config_store = store(group="workflow")
