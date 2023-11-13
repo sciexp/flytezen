@@ -9,8 +9,8 @@ from datetime import timedelta
 from typing import Any, List, Tuple
 
 from flytekit import WorkflowExecutionPhase
-from flytekit.exceptions.user import FlyteTimeout
 from flytekit.exceptions.system import FlyteSystemException
+from flytekit.exceptions.user import FlyteTimeout
 from flytekit.remote import FlyteRemote
 from flytekit.remote.executions import FlyteWorkflowExecution
 from rich.console import Console
@@ -158,7 +158,9 @@ def wait_for_workflow_completion(
         if synced_execution.closure.phase in [WorkflowExecutionPhase.RUNNING]:
             try:
                 if response in ["y", "yes"]:
-                    remote.terminate(execution, "KeyboardInterrupt confirmed termination")
+                    remote.terminate(
+                        execution, "KeyboardInterrupt confirmed termination"
+                    )
                     logger.info("Workflow execution terminated.")
                 else:
                     logger.warning(
@@ -167,6 +169,8 @@ def wait_for_workflow_completion(
             except FlyteSystemException as e:
                 logger.error(f"Error while trying to terminate the execution: {e}")
         else:
-            logger.info(f"Workflow execution already in terminal state: {synced_execution.closure.phase}")
+            logger.info(
+                f"Workflow execution already in terminal state: {synced_execution.closure.phase}"
+            )
 
         exit()
