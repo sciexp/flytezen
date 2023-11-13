@@ -188,20 +188,23 @@ install_poetry: ## Install poetry. Check script before execution: https://python
 
 install_crane: ## Install crane. Check docs before execution: https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane.md .
 	@which crane > /dev/null || ( \
-	set -e; \
-	CRANE_VERSION="0.16.1"; \
-	OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
-	ARCH=$$(uname -m); \
-	case $$ARCH in \
-		x86_64|amd64) ARCH="x86_64" ;; \
-		aarch64|arm64) ARCH="arm64" ;; \
-		*) echo "Unsupported architecture: $$ARCH" && exit 1 ;; \
-	esac; \
-	FILENAME="go-containerregistry_$$OS"_$$ARCH".tar.gz"; \
-	URL="https://github.com/google/go-containerregistry/releases/download/v$$CRANE_VERSION/$$FILENAME"; \
-	curl -sSL "$$URL" | tar xz -C /tmp; \
-	sudo mv /tmp/crane /usr/local/bin/crane; \
-	echo "Crane installed successfully to /usr/local/bin/crane" \
+		set -e; \
+		CRANE_VERSION="0.16.1"; \
+		OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+		ARCH=$$(uname -m); \
+		case $$ARCH in \
+			x86_64|amd64) ARCH="x86_64" ;; \
+			aarch64|arm64) ARCH="arm64" ;; \
+			*) echo "Unsupported architecture: $$ARCH" && exit 1 ;; \
+		esac; \
+		TMP_DIR=$$(mktemp -d); \
+		trap 'rm -rf "$$TMP_DIR"' EXIT; \
+		echo "Downloading crane $$CRANE_VERSION for $$OS $$ARCH to $$TMP_DIR"; \
+		FILENAME="go-containerregistry_$$OS"_$$ARCH".tar.gz"; \
+		URL="https://github.com/google/go-containerregistry/releases/download/v$$CRANE_VERSION/$$FILENAME"; \
+		curl -sSL "$$URL" | tar xz -C $$TMP_DIR; \
+		sudo mv $$TMP_DIR/crane /usr/local/bin/crane; \
+		echo "Crane installed successfully to /usr/local/bin/crane" \
 	)
 
 env_print: ## Print a subset of environment variables defined in ".env" file.
