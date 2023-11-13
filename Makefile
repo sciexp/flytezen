@@ -155,6 +155,13 @@ workflow_build: ## Open Build workflow summary.
 build: ## Build docker image.
 	gh workflow run "Build" --ref main -f debug_enabled=true
 
+docker_login: ## Login to ghcr docker registry. Check regcreds in $HOME/.docker/config.json.
+	docker login ghcr.io -u $(GH_ORG) -p $(GITHUB_TOKEN)
+
+tag_images: ## Tag latest docker images.
+	crane tag $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) latest
+	crane tag ghcr.io/$(GH_ORG)/$(GH_REPO):$(WORKFLOW_IMAGE_TAG) latest
+
 #-------------
 # system / dev
 #-------------
@@ -176,6 +183,24 @@ install_just: ## Install just. Check script before execution: https://just.syste
 
 install_poetry: ## Install poetry. Check script before execution: https://python-poetry.org/docs/#installation .
 	@which poetry > /dev/null || (curl -sSL https://install.python-poetry.org | python3 -)
+
+install_crane: ## Install crane. Check docs before execution: https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane.md .
+	@which crane > /dev/null || ( \
+	set -e; \
+	CRANE_VERSION="0.16.1"; \
+	OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+	ARCH=$$(uname -m); \
+	case $$ARCH in \
+		x86_64|amd64) ARCH="x86_64" ;; \
+		aarch64|arm64) ARCH="arm64" ;; \
+		*) echo "Unsupported architecture: $$ARCH" && exit 1 ;; \
+	esac; \
+	FILENAME="go-containerregistry_$$OS"_$$ARCH".tar.gz"; \
+	URL="https://github.com/google/go-containerregistry/releases/download/v$$CRANE_VERSION/$$FILENAME"; \
+	curl -sSL "$$URL" | tar xz -C /tmp; \
+	sudo mv /tmp/crane /usr/local/bin/crane; \
+	echo "Crane installed successfully to /usr/local/bin/crane" \
+	)
 
 env_print: ## Print a subset of environment variables defined in ".env" file.
 	env | grep "GITHUB\|GH_\|GCP_\|FLYTE\|WORKFLOW" | sort
