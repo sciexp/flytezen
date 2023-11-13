@@ -159,8 +159,8 @@ docker_login: ## Login to ghcr docker registry. Check regcreds in $HOME/.docker/
 	docker login ghcr.io -u $(GH_ORG) -p $(GITHUB_TOKEN)
 
 tag_images: ## Tag latest docker images.
-	crane tag $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) latest
-	crane tag ghcr.io/$(GH_ORG)/$(GH_REPO):$(WORKFLOW_IMAGE_TAG) latest
+	crane tag $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) $(GLOBAL_IMAGE_TAG)
+	crane tag ghcr.io/$(GH_ORG)/$(GH_REPO):$(WORKFLOW_IMAGE_TAG) $(GLOBAL_IMAGE_TAG)
 
 #-------------
 # system / dev
