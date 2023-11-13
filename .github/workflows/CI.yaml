@@ -88,7 +88,7 @@ jobs:
     - name: Setup Flytekit
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r requirements.txt -r requirements-execute.txt
         pip freeze
         pip list
 
@@ -102,37 +102,7 @@ jobs:
       if: ${{ github.event.inputs.debug_enabled == 'true' }}
       uses: mxschmitt/action-tmate@v3
   
-    # - name: Register workflow
-    #   run: |
-    #     flytectl register files \
-    #       --project ${{ env.WORKFLOW_PROJECT }} \
-    #       --domain ${{ env.WORKFLOW_DOMAIN }} \
-    #       --archive workflow.tar.gz \
-    #       --version ${{ github.sha }}
-
-    # - name: Execute workflow
-    #   id: execute
-    #   run: |
-    #     set -e
-    #     execution_name=$(flytectl create execution \
-    #       --project ${{ env.WORKFLOW_PROJECT }} \
-    #       --domain ${{ env.WORKFLOW_DOMAIN }} \
-    #       ${{ env.WORKFLOW_NAME }} \
-    #       --version ${{ github.sha }} -f | jq -r '.id.name')
-    #     echo "Execution Name: $execution_name"
-    #     echo "execution_name=$execution_name" >> $GITHUB_ENV
-
-    # - name: Stream logs
-    #   run: |
-    #     set -e
-    #     until flytectl get execution \
-    #       --project ${{ env.WORKFLOW_PROJECT }} \
-    #       --domain ${{ env.WORKFLOW_DOMAIN }} \
-    #       ${{ env.execution_name }} \
-    #       -o json | jq '.closure.phase' | grep -q 'Succeeded'; do
-    #       flytectl get execution \
-    #         --project ${{ env.WORKFLOW_PROJECT }} \
-    #         --domain ${{ env.WORKFLOW_DOMAIN }} \
-    #         ${{ env.execution_name }} -o json | jq '.closure'
-    #       sleep 10
-    #     done
+    - name: Execute workflow
+      id: execute
+      run: |
+        make run
