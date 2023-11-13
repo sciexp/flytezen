@@ -28,7 +28,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  skip-duplicate-runs:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+    - id: skip_check
+      uses: fkirc/skip-duplicate-actions@v5
+      with:
+        skip_after_successful_duplicate: 'true'
+
   config:
+    needs: skip-duplicate-runs
+    if: ${{ needs.skip-duplicate-runs.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     outputs:
       config-path: ${{ steps.config-output.outputs.path }}
@@ -59,8 +71,14 @@ jobs:
         name: flyte-config
         path: ${{ secrets.FLYTECTL_CONFIG }}
 
-  deploy:
+  build-images:
     needs: config
+    uses: ./.github/workflows/build-images.yaml
+    with:
+      debug_enabled: false
+
+  execute-workflow:
+    needs: [config, build-images]
     runs-on: ubuntu-latest
     env:
         FLYTECTL_CONFIG: ${{ secrets.FLYTECTL_CONFIG }}
