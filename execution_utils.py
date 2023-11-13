@@ -138,7 +138,13 @@ def wait_for_workflow_completion(
             try:
                 completed_execution = remote.wait(execution, timeout=timeout_duration)
                 logger.info(f"Execution completed:\n\n{completed_execution}\n")
-                break
+                if completed_execution.error is None:
+                    break
+                else:
+                    logger.error(
+                        f"Execution failed with error:\n\n{completed_execution.error}\n"
+                    )
+                    exit(1)
             except FlyteTimeout:
                 synced_execution = remote.sync(execution)
                 logger.info(f"Current status:\n\n{synced_execution}\n")
