@@ -105,18 +105,6 @@ def load_workflow(workflow_name: str) -> Any:
     return getattr(workflow_module, func_name)
 
 
-def configure_hydra() -> None:
-    """
-    Configures Hydra:
-        - disable default logging.
-    """
-    hydra_conf = HydraConf(
-        hydra_logging={"version": 1, "root": None, "disable_existing_loggers": False},
-        job_logging={"version": 1, "root": None, "disable_existing_loggers": False},
-    )
-    store(hydra_conf)
-
-
 def get_user_input(input_queue):
     """
     Gets user input and puts it in the queue.
