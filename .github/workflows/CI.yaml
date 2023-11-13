@@ -23,6 +23,10 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  actions: write
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -80,9 +84,6 @@ jobs:
     with:
       debug_enabled: false
 
-    permissions:
-      actions: write
-      contents: read
 
   execute-workflow:
     needs: [config, build-images]
