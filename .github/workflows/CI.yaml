@@ -75,8 +75,11 @@ jobs:
     needs: skip-duplicate-runs
     if: ${{ needs.skip-duplicate-runs.outputs.should_skip != 'true' }}
     uses: ./.github/workflows/build-images.yaml
+    secrets:
+      GCP_ARTIFACT_REGISTRY_PATH: ${{ secrets.GCP_ARTIFACT_REGISTRY_PATH }}
     with:
       debug_enabled: false
+
     permissions:
       actions: write
       contents: read
