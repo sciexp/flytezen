@@ -25,28 +25,12 @@ defaults:
   run:
     shell: bash
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 permissions:
   actions: write
   contents: read
 
 jobs:
-  skip-duplicate-runs:
-    runs-on: ubuntu-latest
-    outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
-    steps:
-    - id: skip_check
-      uses: fkirc/skip-duplicate-actions@v5
-      with:
-        skip_after_successful_duplicate: 'true'
-
   build:
-    needs: skip-duplicate-runs
-    if: ${{ needs.skip-duplicate-runs.outputs.should_skip != 'true' }}
     runs-on: sciexp-runners
     steps:
     - name: Setup Runner for Argo
