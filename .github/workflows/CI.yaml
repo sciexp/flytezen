@@ -137,7 +137,7 @@ jobs:
       run: |
         make run
 
-    - name: Create hydra outputs tarball
+    - name: Create config tarball
       id: save-hydra-outputs
       run: |
         TAR_FILENAME="hydra_outputs_${GITHUB_SHA_SHORT}.tar.gz"
@@ -145,7 +145,7 @@ jobs:
         tar -tzf $TAR_FILENAME
         echo "HYDRA_OUTPUTS_TAR=$TAR_FILENAME" >> $GITHUB_ENV
 
-    - name: Upload hydra outputs artifact 
+    - name: Upload config artifact 
       uses: actions/upload-artifact@v3
       with:
         name: hydra-outputs
