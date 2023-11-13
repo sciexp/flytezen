@@ -118,13 +118,13 @@ run_help: ## Print hydra help for execute script.
 	python execute.py --help
 
 .PHONY: run
-run: ## Run registered workflow (async). Manual: make package_and_register.
+run: ## Run registered workflow (sync). Manual: make package_and_register.
 	python execute.py
 
-run_sync: ## Run registered workflow (sync). Manual: make package_and_register.
-	python execute.py workflow.wait=True
+run_async: ## Run registered workflow (async). Manual: make package_and_register.
+	python execute.py workflow.wait=False
 
-register_and_run: ## Run registered workflow (async). Auto: package_and_register.
+register_and_run: ## Run registered workflow (sync). Auto: package_and_register.
 register_and_run: package_and_register
 	python execute.py
 

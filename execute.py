@@ -91,7 +91,7 @@ if __name__ == "__main__":
         version=workflow_version,
         image=os.environ.get("WORKFLOW_IMAGE"),
         tag=git_short_sha,
-        wait=False,
+        wait=True,
         inputs={"hyperparameters": {"C": 0.2}},
     )
 
