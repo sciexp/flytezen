@@ -134,7 +134,9 @@ run_unregistered: ## Dispatch unregistered run from flytekit cli
 	--project $(WORKFLOW_PROJECT) \
 	--domain $(WORKFLOW_DOMAIN) \
 	--image $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) \
-	workflows/lrwine.py	training_workflow --hyperparameters '{"C": 0.1}'
+	$(WORKFLOW_FILE) \
+	$(WORKFLOW_FILE_WORKFLOW_NAME) \
+	$(WORKFLOW_FILE_WORKFLOW_ARGS)
 
 #-------------
 # CI
