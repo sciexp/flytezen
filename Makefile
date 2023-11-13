@@ -196,6 +196,7 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	gh secret set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
 	gh secret set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
 	gh secret set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
+	gh secret set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
 	gh secret list --repo=$(GH_REPO)
 
 update_config: ## Update flytectl config file from template.
