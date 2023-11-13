@@ -76,6 +76,9 @@ jobs:
     uses: ./.github/workflows/build-images.yaml
     with:
       debug_enabled: false
+    permissions:
+      actions: write
+      contents: read
 
   execute-workflow:
     needs: [config, build-images]
