@@ -199,6 +199,14 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	gh secret set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
 	gh secret list --repo=$(GH_REPO)
 
+ghvars: ## Update github secrets for GH_REPO from ".env" file.
+	gh variable list --repo=$(GH_REPO)
+	gh variable set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
+	gh variable set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
+	gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
+	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
+	gh variable list --repo=$(GH_REPO)
+
 update_config: ## Update flytectl config file from template.
 	yq ea \
 		'.admin.endpoint = strenv(FLYTE_CLUSTER_ENDPOINT) | \
