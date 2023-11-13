@@ -72,7 +72,8 @@ jobs:
         path: ${{ secrets.FLYTECTL_CONFIG }}
 
   build-images:
-    needs: config
+    needs: skip-duplicate-runs
+    if: ${{ needs.skip-duplicate-runs.outputs.should_skip != 'true' }}
     uses: ./.github/workflows/build-images.yaml
     with:
       debug_enabled: false
