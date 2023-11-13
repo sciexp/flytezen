@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     store.add_to_hydra_store()
     zen(execute_workflow).hydra_main(
+        config_path=None,
         config_name="workflow_execution",
         version_base="1.2",
-        config_path="./conf",
     )
