@@ -100,5 +100,5 @@ if __name__ == "__main__":
     zen(execute_workflow).hydra_main(
         config_name="workflow_execution",
         version_base="1.2",
-        config_path=".",
+        config_path="./conf",
     )
