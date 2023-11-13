@@ -56,12 +56,12 @@ jobs:
       id: yq-process
       uses: mikefarah/yq@master
       with:
-        cmd: "yq ea \
-                 '.admin.endpoint = strenv(FLYTE_CLUSTER_ENDPOINT) | \
-                 .storage.stow.config.project_id = strenv(GCP_PROJECT_ID) | \
-                 .storage.stow.config.scopes = strenv(GCP_STORAGE_SCOPES) | \
-                 .storage.container = strenv(GCP_STORAGE_CONTAINER)' \
-                 config-template.yaml > config.yaml"
+        cmd: "yq e \
+              '.admin.endpoint = strenv(FLYTE_CLUSTER_ENDPOINT) | \
+              .storage.stow.config.project_id = strenv(GCP_PROJECT_ID) | \
+              .storage.stow.config.scopes = strenv(GCP_STORAGE_SCOPES) | \
+              .storage.container = strenv(GCP_STORAGE_CONTAINER)' \
+              config-template.yaml > config.yaml"
       env:
         FLYTE_CLUSTER_ENDPOINT: ${{ secrets.FLYTE_CLUSTER_ENDPOINT }}
         GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
