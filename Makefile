@@ -19,9 +19,9 @@ help: ## Display this help. (Default)
 help_sort: ## Display alphabetized version of help.
 	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-#-------------
-# flyte
-#-------------
+#---------------
+# workflow setup
+#---------------
 
 flyte_info: ## Print flyte version and config.
 flyte_info: flyte_config flyte_meta get_projects get_project get_workflows get_workflow get_tasks
@@ -110,11 +110,21 @@ register_workflows: ## Register workflows.
 package_and_register: ## Package and register workflows.
 package_and_register: package_workflows register_workflows 
 
+#-------------------
+# workflow execution
+#-------------------
+
+run_help: ## Print hydra help for execute script.
+	python execute.py --help
+
 .PHONY: run
-run: ## Run registered workflow. Manual: make package_and_register.
+run: ## Run registered workflow (async). Manual: make package_and_register.
 	python execute.py
 
-register_and_run: ## Run registered workflow. Auto: package_and_register.
+run_sync: ## Run registered workflow (sync). Manual: make package_and_register.
+	python execute.py workflow.wait=True
+
+register_and_run: ## Run registered workflow (async). Auto: package_and_register.
 register_and_run: package_and_register
 	python execute.py
 
