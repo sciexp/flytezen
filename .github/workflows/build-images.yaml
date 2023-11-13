@@ -1,4 +1,4 @@
-name: Build
+name: Build Images
 env:
   ARGO_NAMESPACE: argo
   ARGO_VERSION: v3.5.1
@@ -6,17 +6,14 @@ env:
   CONTAINER_REGISTRY_URL2: 'ghcr.io/sciexp'
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore: ["docs/**", "**.md", "*"]
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: ["docs/**", "**.md", "*"]
-  
   workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: "Run with tmate.io debugging enabled"
+        required: true
+        type: boolean
+        default: false
+  workflow_call:
     inputs:
       debug_enabled:
         description: "Run with tmate.io debugging enabled"
