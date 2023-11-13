@@ -1,4 +1,6 @@
 import os
+from dataclasses import dataclass
+from typing import Any, Dict
 
 import rich.syntax
 import rich.tree
@@ -6,11 +8,12 @@ from dotenv import load_dotenv
 from flytekit.configuration import Config as FlyteConfig
 from flytekit.configuration import ImageConfig, SerializationSettings
 from flytekit.remote import FlyteRemote
-from hydra_zen import make_config, store, to_yaml, zen
+from hydra.conf import HydraConf
+from hydra_zen import ZenStore, to_yaml, zen
+from omegaconf import OmegaConf
 
 from execution_utils import (
     check_required_env_vars,
-    configure_hydra,
     configure_logging,
     git_info_to_workflow_version,
     load_workflow,
@@ -18,11 +21,19 @@ from execution_utils import (
 )
 
 
-@store(
-    name="workflow_execution",
-    hydra_defaults=["_self_", {"workflow": "workflow_config"}],
-)
-def execute_workflow(workflow):
+@dataclass
+class WorkflowConfigClass:
+    name: str
+    project: str
+    domain: str
+    version: str
+    image: str
+    tag: str
+    wait: bool
+    inputs: Dict[str, Any]
+
+
+def execute_workflow(workflow: WorkflowConfigClass):
     """
     Executes the given workflow based on the Hydra configuration.
 
@@ -51,9 +62,10 @@ def execute_workflow(workflow):
         version=workflow.version,
     )
 
+    inputs = OmegaConf.to_container(workflow.inputs, resolve=True)
     execution = remote.execute(
         entity=entity,
-        inputs=workflow.inputs,
+        inputs=inputs,
         version=workflow.version,
         execution_name_prefix=workflow.version,
         wait=False,
@@ -79,28 +91,39 @@ if __name__ == "__main__":
         logger,
     ) or exit(1)
 
-    configure_hydra()
+    store = ZenStore(deferred_hydra_store=False)
+
+    hydra_conf = HydraConf(
+        hydra_logging={"version": 1, "root": None, "disable_existing_loggers": False},
+        job_logging={"version": 1, "root": None, "disable_existing_loggers": False},
+    )
+    store(hydra_conf)
 
     repo_name, git_branch, git_short_sha = git_info_to_workflow_version(logger)
     workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}"
 
-    WorkflowConfig = make_config(
-        name=os.environ.get("WORKFLOW_NAME"),
-        project=os.environ.get("WORKFLOW_PROJECT"),
-        domain=os.environ.get("WORKFLOW_DOMAIN"),
-        version=workflow_version,
-        image=os.environ.get("WORKFLOW_IMAGE"),
-        tag=git_short_sha,
-        wait=True,
-        inputs={"hyperparameters": {"C": 0.2}},
+    workflow_dictionary = {
+        "hyperparameters": {"C": 0.2}
+    }
+
+    store(
+        execute_workflow,
+        workflow=WorkflowConfigClass(
+            name=os.environ.get("WORKFLOW_NAME"),
+            project=os.environ.get("WORKFLOW_PROJECT"),
+            domain=os.environ.get("WORKFLOW_DOMAIN"),
+            version=workflow_version,
+            image=os.environ.get("WORKFLOW_IMAGE"),
+            tag=git_short_sha,
+            wait=True,
+            inputs=workflow_dictionary,
+        ),
     )
 
-    workflow_config_store = store(group="workflow")
-    workflow_config_store(WorkflowConfig, name="workflow_config")
-
     store.add_to_hydra_store()
+
     zen(execute_workflow).hydra_main(
         config_path=None,
-        config_name="workflow_execution",
-        version_base="1.2",
+        config_name="execute_workflow",
+        version_base="1.3",
     )
