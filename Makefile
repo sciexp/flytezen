@@ -206,9 +206,6 @@ env_print: ## Print a subset of environment variables defined in ".env" file.
 	env | grep "GITHUB\|GH_\|GCP_\|FLYTE\|WORKFLOW" | sort
 
 # gh secret set GOOGLE_APPLICATION_CREDENTIALS_DATA --repo="$(GH_REPO)" --body='$(shell cat $(GCP_GACD_PATH))'
-# gh secret set CODECOV_TOKEN --repo="$(GH_REPO)" --body="$(CODECOV_TOKEN)"
-# gh secret set GCP_SERVICE_ACCOUNT --repo="$(GH_REPO)" --body="$(GCP_SERVICE_ACCOUNT)"
-# gh secret set TEST_PYPI_TOKEN --repo="$(GH_REPO)" --body="$(TEST_PYPI_TOKEN)"
 ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	gh secret list --repo=$(GH_REPO)
 	gh secret set FLYTE_CLUSTER_ENDPOINT --repo="$(GH_REPO)" --body="$(FLYTE_CLUSTER_ENDPOINT)"
