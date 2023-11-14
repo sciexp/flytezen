@@ -3,6 +3,7 @@ config.yaml
 
 # hydra outputs
 outputs/
+multirun/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
