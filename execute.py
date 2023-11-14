@@ -1,16 +1,15 @@
 import os
 from dataclasses import dataclass
-from typing import Any, Dict
 
 import rich.syntax
 import rich.tree
+from dataclasses_json import dataclass_json
 from dotenv import load_dotenv
 from flytekit.configuration import Config as FlyteConfig
 from flytekit.configuration import ImageConfig, SerializationSettings
 from flytekit.remote import FlyteRemote
 from hydra.conf import HydraConf
 from hydra_zen import ZenStore, to_yaml, zen
-from omegaconf import OmegaConf
 
 from execution_utils import (
     check_required_env_vars,
@@ -19,18 +18,20 @@ from execution_utils import (
     load_workflow,
     wait_for_workflow_completion,
 )
+from workflows.lrwine import Hyperparameters
 
 
+@dataclass_json
 @dataclass
 class WorkflowConfigClass:
-    name: str
+    import_path: str
     project: str
     domain: str
     version: str
     image: str
     tag: str
     wait: bool
-    inputs: Dict[str, Any]
+    hyperparameters: Hyperparameters
 
 
 def execute_workflow(workflow: WorkflowConfigClass):
@@ -45,14 +46,14 @@ def execute_workflow(workflow: WorkflowConfigClass):
     tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
     rich.print(tree)
 
-    entity = load_workflow(workflow.name)
+    entity = load_workflow(workflow.import_path)
     remote = FlyteRemote(
         config=FlyteConfig.auto(),
         default_project=workflow.project,
         default_domain=workflow.domain,
     )
 
-    logger.info(f"Registering workflow:\n\n\t{workflow.name}\n")
+    logger.info(f"Registering workflow:\n\n\t{workflow.import_path}\n")
     serialization_settings = SerializationSettings(
         ImageConfig.auto(img_name=f"{workflow.image}:{workflow.tag}")
     )
@@ -62,10 +63,9 @@ def execute_workflow(workflow: WorkflowConfigClass):
         version=workflow.version,
     )
 
-    inputs = OmegaConf.to_container(workflow.inputs, resolve=True)
     execution = remote.execute(
         entity=entity,
-        inputs=inputs,
+        inputs={"hyperparameters": workflow.hyperparameters},
         version=workflow.version,
         execution_name_prefix=workflow.version,
         wait=False,
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         [
             "WORKFLOW_PROJECT",
             "WORKFLOW_DOMAIN",
-            "WORKFLOW_NAME",
+            "WORKFLOW_IMPORT_PATH",
             "WORKFLOW_IMAGE",
         ],
         logger,
@@ -102,21 +102,17 @@ if __name__ == "__main__":
     repo_name, git_branch, git_short_sha = git_info_to_workflow_version(logger)
     workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}"
 
-    workflow_dictionary = {
-        "hyperparameters": {"C": 0.2}
-    }
-
     store(
         execute_workflow,
         workflow=WorkflowConfigClass(
-            name=os.environ.get("WORKFLOW_NAME"),
+            import_path=os.environ.get("WORKFLOW_IMPORT_PATH"),
             project=os.environ.get("WORKFLOW_PROJECT"),
             domain=os.environ.get("WORKFLOW_DOMAIN"),
             version=workflow_version,
             image=os.environ.get("WORKFLOW_IMAGE"),
             tag=git_short_sha,
             wait=True,
-            inputs=workflow_dictionary,
+            hyperparameters=Hyperparameters(C=0.2, max_iter=2500),
         ),
     )
 

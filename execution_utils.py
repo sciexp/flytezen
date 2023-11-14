@@ -96,13 +96,13 @@ def git_info_to_workflow_version(logger: logging.Logger) -> Tuple[str, str, str]
         raise
 
 
-def load_workflow(workflow_name: str) -> Any:
+def load_workflow(workflow_import_path: str) -> Any:
     """
     Loads the specified workflow.
     """
-    package_name, module_name, func_name = workflow_name.split(".")
+    package_name, module_name, workflow_name = workflow_import_path.split(".")
     workflow_module = importlib.import_module(f"{package_name}.{module_name}")
-    return getattr(workflow_module, func_name)
+    return getattr(workflow_module, workflow_name)
 
 
 def get_user_input(input_queue):

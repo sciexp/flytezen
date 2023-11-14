@@ -93,7 +93,7 @@ jobs:
         FLYTE_OAUTH_CLIENT_SECRET: ${{ secrets.FLYTE_OAUTH_CLIENT_SECRET }}
         WORKFLOW_PROJECT: ${{ vars.WORKFLOW_PROJECT }}
         WORKFLOW_DOMAIN: ${{ vars.WORKFLOW_DOMAIN }}
-        WORKFLOW_NAME: ${{ vars.WORKFLOW_NAME }}
+        WORKFLOW_IMPORT_PATH: ${{ vars.WORKFLOW_IMPORT_PATH }}
         WORKFLOW_IMAGE: ${{ vars.WORKFLOW_IMAGE }}
     steps:
     - name: Checkout code

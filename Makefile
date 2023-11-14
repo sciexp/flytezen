@@ -60,14 +60,14 @@ GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 WORKFLOW_VERSION ?= $(GH_REPO_NAME)-$(GIT_BRANCH)-$(GIT_SHORT_SHA)
 
 get_workflow: ## Get workflow representation ( dot, yaml, doturl, json ).
-	@printf "\033[1;34m\n$$WORKFLOW_NAME:\n\n\033[0m"
+	@printf "\033[1;34m\n$$WORKFLOW_IMPORT_PATH:\n\n\033[0m"
 	@echo "config file: $$FLYTECTL_CONFIG"
 	flytectl get workflows \
 		--project $(WORKFLOW_PROJECT) \
 		--domain $(WORKFLOW_DOMAIN) \
 		--version $(WORKFLOW_VERSION) \
 		-o $(WORKFLOW_OUTPUT_FORMAT) \
-		$(WORKFLOW_NAME)
+		$(WORKFLOW_IMPORT_PATH)
 
 get_tasks: ## Get workflow tasks representation ( table ).
 	@printf "\033[1;34m\nTASKS:\n\n\033[0m"
@@ -135,9 +135,14 @@ run_unregistered: ## Dispatch unregistered run from flytekit cli
 	--domain $(WORKFLOW_DOMAIN) \
 	--image $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) \
 	$(WORKFLOW_FILE) \
-	$(WORKFLOW_FILE_WORKFLOW_NAME) \
+	$(WORKFLOW_NAME) \
 	$(WORKFLOW_FILE_WORKFLOW_ARGS)
 
+run_local: ## Dispatch unregistered run from flytekit cli
+	pyflyte run \
+	$(WORKFLOW_FILE) \
+	$(WORKFLOW_NAME) \
+	$(WORKFLOW_FILE_WORKFLOW_ARGS)
 #-------------
 # CI
 #-------------
@@ -222,7 +227,7 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	gh secret set GCP_ARTIFACT_REGISTRY_PATH --repo="$(GH_REPO)" --body="$(GCP_ARTIFACT_REGISTRY_PATH)"
 	gh secret set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
 	gh secret set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
-	gh secret set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
+	gh secret set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
 	gh secret set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
 	gh secret list --repo=$(GH_REPO)
 
@@ -230,7 +235,7 @@ ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	gh variable list --repo=$(GH_REPO)
 	gh variable set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
 	gh variable set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
-	gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
+	gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
 	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
 	gh variable list --repo=$(GH_REPO)
 
