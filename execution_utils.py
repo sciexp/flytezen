@@ -6,9 +6,11 @@ import subprocess
 import threading
 import time
 from datetime import timedelta
-from typing import Any, List, Tuple
+from types import ModuleType
+from typing import List, Tuple
 
 from flytekit import WorkflowExecutionPhase
+from flytekit.core.workflow import PythonFunctionWorkflow
 from flytekit.exceptions.system import FlyteSystemException
 from flytekit.exceptions.user import FlyteTimeout
 from flytekit.remote import FlyteRemote
@@ -96,13 +98,14 @@ def git_info_to_workflow_version(logger: logging.Logger) -> Tuple[str, str, str]
         raise
 
 
-def load_workflow(workflow_import_path: str) -> Any:
+def load_workflow(workflow_import_path: str) -> (ModuleType, PythonFunctionWorkflow):
     """
     Loads the specified workflow.
     """
     package_name, module_name, workflow_name = workflow_import_path.split(".")
     workflow_module = importlib.import_module(f"{package_name}.{module_name}")
-    return getattr(workflow_module, workflow_name)
+    workflow_function = getattr(workflow_module, workflow_name)
+    return workflow_module, workflow_function
 
 
 def get_user_input(input_queue):
