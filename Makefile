@@ -133,16 +133,16 @@ run_unregistered: ## Dispatch unregistered run from flytekit cli
 	--remote \
 	--project $(WORKFLOW_PROJECT) \
 	--domain $(WORKFLOW_DOMAIN) \
-	--image $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) \
+	--image $(WORKFLOW_IMAGE):$(GIT_BRANCH) \
 	$(WORKFLOW_FILE) \
 	$(WORKFLOW_NAME) \
-	$(WORKFLOW_FILE_WORKFLOW_ARGS)
+	--hyperparameters $(WORKFLOW_FILE_WORKFLOW_ARGS)
 
 run_local: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
 	$(WORKFLOW_FILE) \
 	$(WORKFLOW_NAME) \
-	$(WORKFLOW_FILE_WORKFLOW_ARGS)
+	--hyperparameters $(WORKFLOW_FILE_WORKFLOW_ARGS)
 #-------------
 # CI
 #-------------
