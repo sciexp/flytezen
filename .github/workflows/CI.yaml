@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - main
-    paths-ignore: ["docs/**", "**.md", "*"]
+    paths-ignore: ["docs/**", "scripts/**", "**.md", "*"]
   pull_request:
     branches:
       - main
     types: [opened, synchronize, ready_for_review]
-    paths-ignore: ["docs/**", "**.md", "*"]
+    paths-ignore: ["docs/**", "scripts/**", "**.md", "*"]
   
   workflow_dispatch:
     inputs:
