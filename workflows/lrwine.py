@@ -16,6 +16,7 @@ class Hyperparameters:
 @task
 def get_data() -> pd.DataFrame:
     """Get the wine dataset."""
+    print("check flytezen-1-package-5296648")
     return load_wine(as_frame=True).frame
 
 @task
