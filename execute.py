@@ -1,3 +1,4 @@
+import logging
 import os
 from dataclasses import dataclass
 from typing import Any
@@ -54,7 +55,7 @@ class WorkflowConfigClass:
     hyperparameters: Any
 
 
-def execute_workflow(workflow: WorkflowConfigClass):
+def execute_workflow(workflow: WorkflowConfigClass) -> None:
     """
     Executes the given workflow based on the Hydra configuration.
 
@@ -143,7 +144,7 @@ def execute_workflow(workflow: WorkflowConfigClass):
         wait_for_workflow_completion(execution, remote, logger)
 
 
-def main():
+def main(logger: logging.Logger) -> None:
     """
     Main function that executes the workflow on the remote in one of two modes determined
     by "WORKFLOW_REGISTRATION_MODE":
@@ -154,23 +155,38 @@ def main():
     - In 'prod' mode, it uses the container image with the git short SHA tag just after
       building an image. This is primarily for CI execution.
 
-    Note this logic regarding the image tag is independent of setting domain to "development", 
+    Note this logic regarding the image tag is independent of setting domain to "development",
     "staging", "production", etc.
 
-    The workflow version is also separately determined based on the current git repo name, 
-    branch, and commit SHA. 
+    The workflow version is also separately determined based on the current git repo name,
+    branch, and commit SHA.
     """
+
+    load_dotenv()
+
+    check_required_env_vars(
+        [
+            "WORKFLOW_IMPORT_PATH",
+            "WORKFLOW_CONFIG_CLASS_NAME",
+            "WORKFLOW_PROJECT",
+            "WORKFLOW_DOMAIN",
+            "WORKFLOW_REGISTRATION_MODE",
+            "WORKFLOW_IMAGE",
+        ],
+        logger,
+    ) or exit(1)
+
     store = ZenStore(deferred_hydra_store=False)
 
     hydra_conf = HydraConf(
         defaults=[
             {"output": "default"},
-            {"launcher": "basic"}, # joblib
+            {"launcher": "basic"},  # joblib
             {"sweeper": "basic"},
             {"help": "default"},
             {"hydra_help": "default"},
-            {"hydra_logging": "none"}, # default
-            {"job_logging": "none"}, # default
+            {"hydra_logging": "none"},  # default
+            {"job_logging": "none"},  # default
             {"callbacks": None},
             {"env": "default"},
         ],
@@ -246,25 +262,11 @@ if __name__ == "__main__":
         C: 0.3
         max_iter: 2500
 
-        
+
     Example usage:
 
     ❯ python execute.py workflow.hyperparameters.C=0.4 workflow.hyperparameters.max_iter=1200
     ❯ python execute.py --multirun workflow.hyperparameters.C=0.2,0.5
     """
-    load_dotenv()
     logger = configure_logging()
-
-    check_required_env_vars(
-        [
-            "WORKFLOW_IMPORT_PATH",
-            "WORKFLOW_CONFIG_CLASS_NAME",
-            "WORKFLOW_PROJECT",
-            "WORKFLOW_DOMAIN",
-            "WORKFLOW_REGISTRATION_MODE",
-            "WORKFLOW_IMAGE",
-        ],
-        logger,
-    ) or exit(1)
-
-    main()
+    main(logger)
