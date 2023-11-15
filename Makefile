@@ -149,17 +149,19 @@ run_local: ## Dispatch unregistered run from flytekit cli
 browse: ## Open github repo in browser at HEAD commit.
 	gh browse $(GIT_SHORT_SHA)
 
-workflow_ci: ## Open CI workflow summary.
+GH_ACTIONS_DEBUG ?= false
+
+ci: ## Run CI (GH_ACTIONS_DEBUG default is false).
+	gh workflow run "CI" --ref $(GIT_BRANCH) -f debug_enabled=$(GH_ACTIONS_DEBUG)
+
+build_images: ## Run Build Images (GH_ACTIONS_DEBUG default is false).
+	gh workflow run "Build Images" --ref $(GIT_BRANCH) -f debug_enabled=$(GH_ACTIONS_DEBUG)
+
+ci_view_workflow: ## Open CI workflow summary.
 	gh workflow view "CI"
 
-ci: ## Run CI with debug enabled.
-	gh workflow run "CI" --ref main -f debug_enabled=true
-
-workflow_build: ## Open Build workflow summary.
-	gh workflow view "Build"
-
-build: ## Build docker image.
-	gh workflow run "Build" --ref main -f debug_enabled=true
+build_images_view_workflow: ## Open Build Images workflow summary.
+	gh workflow view "Build Images"
 
 docker_login: ## Login to ghcr docker registry. Check regcreds in $HOME/.docker/config.json.
 	docker login ghcr.io -u $(GH_ORG) -p $(GITHUB_TOKEN)
