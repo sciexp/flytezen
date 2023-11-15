@@ -3,6 +3,7 @@ import logging
 import os
 import queue
 import subprocess
+import sys
 import threading
 import time
 from datetime import timedelta
@@ -135,7 +136,7 @@ def wait_for_workflow_completion(
                     logger.error(
                         f"Execution failed with error:\n\n{completed_execution.error}\n"
                     )
-                    exit(1)
+                    sys.exit(1)
             except FlyteTimeout:
                 synced_execution = remote.sync(execution)
                 logger.info(f"Current status:\n\n{synced_execution}\n")
@@ -176,4 +177,4 @@ def wait_for_workflow_completion(
                 f"Workflow execution already in terminal state: {synced_execution.closure.phase}"
             )
 
-        exit()
+        sys.exit()

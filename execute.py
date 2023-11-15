@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from dataclasses import dataclass
 from typing import Any
 
@@ -136,7 +137,7 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
             f"Invalid workflow registration mode: {workflow.mode}. "
             "Please set WORKFLOW_REGISTRATION_MODE to either 'dev' or 'prod' in your environment."
         )
-        exit(1)
+        sys.exit(1)
     logger.info(f"Execution submitted:\n\n{execution}\n")
     logger.info(f"Execution url:\n\n{remote.generate_console_url(execution)}\n")
 
@@ -174,7 +175,7 @@ def main(logger: logging.Logger) -> None:
             "WORKFLOW_IMAGE",
         ],
         logger,
-    ) or exit(1)
+    ) or sys.exit(1)
 
     store = ZenStore(deferred_hydra_store=False)
 
@@ -210,7 +211,7 @@ def main(logger: logging.Logger) -> None:
             f"Invalid workflow registration mode: {workflow_registration_mode}. "
             "Please set WORKFLOW_REGISTRATION_MODE to either 'dev' or 'prod' in your environment."
         )
-        exit(1)
+        sys.exit(1)
 
     store(
         execute_workflow,
