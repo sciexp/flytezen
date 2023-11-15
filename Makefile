@@ -118,15 +118,14 @@ run_help: ## Print hydra help for execute script.
 	python execute.py --help
 
 .PHONY: run
-run: ## Run registered workflow (sync). Manual: make package_and_register.
+run: ## Run registered workflow (sync).
 	python execute.py
 
-run_async: ## Run registered workflow (async). Manual: make package_and_register.
+multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
+	python execute.py --multirun workflow.hyperparameters.C=0.2,0.5
+
+run_async: ## Run registered workflow (async).
 	python execute.py workflow.wait=False
-
-register_and_run: ## Run registered workflow (sync). Auto: package_and_register.
-register_and_run: package_and_register
-	python execute.py
 
 run_unregistered: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
@@ -237,6 +236,8 @@ ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	gh variable set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
 	gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
 	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
+	gh variable set WORKFLOW_CONFIG_CLASS_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_CONFIG_CLASS_NAME)"
+	gh variable set WORKFLOW_REGISTRATION_MODE --repo="$(GH_REPO)" --body="prod"
 	gh variable list --repo=$(GH_REPO)
 
 update_config: ## Update flytectl config file from template.
