@@ -1,11 +1,12 @@
-from dataclasses import dataclass, asdict
-from dataclasses_json import dataclass_json
-import pandas as pd
-from sklearn.datasets import load_wine
-from sklearn.linear_model import LogisticRegression
+from dataclasses import asdict, dataclass
 from typing import Optional
 
+import pandas as pd
+from dataclasses_json import dataclass_json
 from flytekit import task, workflow
+from sklearn.datasets import load_wine
+from sklearn.linear_model import LogisticRegression
+
 
 @dataclass_json
 @dataclass
@@ -16,7 +17,6 @@ class Hyperparameters:
 @task
 def get_data() -> pd.DataFrame:
     """Get the wine dataset."""
-    print("check flytezen-1-package-5296648")
     return load_wine(as_frame=True).frame
 
 @task
