@@ -33,7 +33,7 @@ class WorkflowConfigClass:
         project (str): The Flyte project in which to register or execute the workflow.
         domain (str): The Flyte domain in which to register or execute the workflow.
         version (str): The version of the workflow, including a git commit hash or other identifier(s).
-        workflow_registration_mode (str): Mode of workflow registration - 'dev' for fast registration and
+        mode (str): Mode of workflow registration - 'dev' for fast registration and
                                           'prod' for manual registration.
         image (str): The container image FQN to use for executing the workflow.
         tag (str): The tag to append to the container image FQN to use for executing the workflow.
@@ -47,7 +47,7 @@ class WorkflowConfigClass:
     project: str
     domain: str
     version: str
-    workflow_registration_mode: str
+    mode: str
     image: str
     tag: str
     wait: bool
@@ -58,7 +58,7 @@ def execute_workflow(workflow: WorkflowConfigClass):
     """
     Executes the given workflow based on the Hydra configuration.
 
-    The function supports two modes of execution controlled by 'workflow_registration_mode':
+    The function supports two modes of execution controlled by 'mode':
     - 'dev': Executes a copy of the local workflow on the remote. This mode is used for
       development purposes, where changes to the workflow code can be tested remotely
       without needing to rebuild and push the container image.
@@ -73,7 +73,7 @@ def execute_workflow(workflow: WorkflowConfigClass):
         workflow: Hydra configuration object for the workflow execution.
 
     Raises:
-        Exit status set to one if 'workflow_registration_mode' is set to an invalid value.
+        Exit status set to one if 'mode' is set to an invalid value.
     """
     config_yaml = to_yaml(workflow)
     tree = rich.tree.Tree("WORKFLOW", style="dim", guide_style="dim")
@@ -88,7 +88,7 @@ def execute_workflow(workflow: WorkflowConfigClass):
     )
     image_config = ImageConfig.auto(img_name=f"{workflow.image}:{workflow.tag}")
 
-    if workflow.workflow_registration_mode == "dev":
+    if workflow.mode == "dev":
         # In dev mode, we execute a copy of the local workflow on the remote.
         # This is meant to mimic the fast registration mode of the pyflyte cli:
         #   pyflyte run \
@@ -109,7 +109,7 @@ def execute_workflow(workflow: WorkflowConfigClass):
             image_config=image_config,
             wait=False,
         )
-    elif workflow.workflow_registration_mode == "prod":
+    elif workflow.mode == "prod":
         # In prod mode, we register the workflow on the remote and then execute it.
         # This requires that a container image with code equivalent to the current
         # local copy has been built. As such, this is primarily meant to be used
@@ -132,7 +132,7 @@ def execute_workflow(workflow: WorkflowConfigClass):
         )
     else:
         logger.error(
-            f"Invalid workflow registration mode: {workflow.workflow_registration_mode}. "
+            f"Invalid workflow registration mode: {workflow.mode}. "
             "Please set WORKFLOW_REGISTRATION_MODE to either 'dev' or 'prod' in your environment."
         )
         exit(1)
@@ -204,7 +204,7 @@ def main():
             project=os.environ.get("WORKFLOW_PROJECT"),
             domain=os.environ.get("WORKFLOW_DOMAIN"),
             version=workflow_version,
-            workflow_registration_mode=workflow_registration_mode,
+            mode=workflow_registration_mode,
             image=os.environ.get("WORKFLOW_IMAGE"),
             tag=image_tag,
             wait=True,
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     project: flytesnacks
     domain: development
     version: flyte-template-main-16323b3
-    workflow_registration_mode: dev
+    mode: dev
     image: ghcr.io/org/flyte-template
     tag: main
     wait: true
