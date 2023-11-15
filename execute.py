@@ -252,9 +252,9 @@ if __name__ == "__main__":
     config_class: Hyperparameters
     project: flytesnacks
     domain: development
-    version: flyte-template-main-16323b3
+    version: flytezen-main-16323b3
     mode: dev
-    image: ghcr.io/org/flyte-template
+    image: ghcr.io/org/flytezen
     tag: main
     wait: true
     hyperparameters:
