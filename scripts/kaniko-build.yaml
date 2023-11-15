@@ -17,8 +17,8 @@ spec:
         - "--dockerfile=/git-repo/containers/base.Dockerfile"
         - "--context=dir:///git-repo/"
         - "--cache"
-        - "--destination=us.gcr.io/project/pipelines/flyte-template:d48803e17fe1f7febfa2e6212e5f717a30c06ec8"
-        - "--destination=ghcr.io/cameronraysmith/flyte-template:d48803e17fe1f7febfa2e6212e5f717a30c06ec8"
+        - "--destination=us.gcr.io/project/pipelines/flytezen:d48803e17fe1f7febfa2e6212e5f717a30c06ec8"
+        - "--destination=ghcr.io/cameronraysmith/flytezen:d48803e17fe1f7febfa2e6212e5f717a30c06ec8"
         - "--compressed-caching=false"
         - "--use-new-run=true"
         - "--snapshot-mode=redo"
@@ -51,7 +51,7 @@ spec:
         args:
           - |
             echo "Using GIT_TOKEN to clone repository"
-            git clone --single-branch --branch=main "https://${GIT_TOKEN}:x-oauth-basic@github.com/cameronraysmith/flyte-template.git" /git-repo
+            git clone --single-branch --branch=main "https://${GIT_TOKEN}:x-oauth-basic@github.com/cameronraysmith/flytezen.git" /git-repo
         resources:
           requests:
             memory: "128Mi"
