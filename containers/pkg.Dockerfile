@@ -22,6 +22,9 @@ COPY . /root
 
 # Local development
 RUN pip install --upgrade pip && \
-    pip install -e .[dev]
+    pip install -e .
 # Install from PyPI
-# RUN pip install yourlibrary==0.1.0
+# RUN pip install flytezen==0.1.0
+
+ARG tag
+ENV FLYTE_INTERNAL_IMAGE $tag
