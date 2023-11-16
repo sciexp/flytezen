@@ -19,6 +19,24 @@ help: ## Display this help. (Default)
 help_sort: ## Display alphabetized version of help.
 	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+#---------
+# flytezen
+#---------
+
+test: ## Run tests
+	poetry run pytest -rA
+
+test-cov-xml: ## Run tests with coverage
+	poetry run pytest -rA --cov-report=xml
+
+lint: ## Run linter
+	poetry run black .
+	poetry run ruff --fix .
+
+lint-check: ## Run linter in check mode
+	poetry run black --check .
+	poetry run ruff .
+
 #---------------
 # workflow setup
 #---------------

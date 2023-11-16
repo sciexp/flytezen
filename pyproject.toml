@@ -63,9 +63,6 @@ python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = [
-  "numpyro",
-  "numpyro.infer",
-  "numpyro.distributions",
 ]
 ignore_missing_imports = true
 warn_unreachable = true
@@ -76,17 +73,16 @@ show_error_context = true
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
-anndata = ">=0.10.2"
-geomloss = ">=0.2.6"
-igraph = ">=0.11.2"
-lightning = ">=2.1.0"
-louvain = ">=0.7.1"
-pykeops = ">=2.1.2"
-scanpy = ">=1.9.5"
-scvelo = ">=0.2.5"
-timm = ">=0.9.7"
-torchsde = ">=0.2.6"
-umap-learn = ">=0.5.4"
+flytekit = ">=1.10.0"
+pandas = ">=1.5.3"
+scikit-learn = ">=1.3.2"
+python-dotenv = "1.0.0"
+hydra-zen = ">=0.11.0"
+hydra-joblib-launcher = ">=1.2.0"
+rich = "13.6.0"
+rich-click = ">=1.7.0"
+dataclasses-json = ">=0.5.9"
+fsspec = "<2023.10.0"
 
 # dev dependencies
 black = { version = ">=23.10.0", optional = true, extras = ["jupyter"] }
@@ -102,9 +98,6 @@ pytest-asyncio = { version = ">=0.21.1", optional = true }
 pytest-cov = { version = ">=4.1.0", optional = true }
 ruff = { version = ">=0.1.0", optional = true }
 xdoctest = { version = ">=1.1.1", optional = true }
-
-# pipelines dependencies
-zenml = { version = "==0.45.4", optional = true }
 
 [tool.poetry.extras]
 dev = [
@@ -122,9 +115,6 @@ dev = [
   "ruff",
   "xdoctest",
  ]
-pipelines = [
-  "zenml",
-]
 
 [tool.conda-lock]
 channels = [
@@ -169,7 +159,7 @@ formats = "ipynb,text//py:percent,text//md"
 
 [tool.poetry]
 name = "flytezen"
-version = "0.0.0"
+version = "0.1.0.dev1"
 packages = [
     { include = "flytezen", from = "src" },
 ]
