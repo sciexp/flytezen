@@ -269,34 +269,36 @@ def main() -> None:
 if __name__ == "__main__":
     """
     This script executes a Flyte workflow configured with hydra-zen.
-    > python execute.py --help
+    > flytezen --help
 
     == Config ==
     Override anything in the config (foo.bar=value)
 
-    _target_: __main__.execute_workflow
+    _target_: flytezen.cli.execute.execute_workflow
     workflow:
-    _target_: __main__.WorkflowConfigClass
-    package_path: workflows
-    import_path: workflows.lrwine.training_workflow
-    config_class: Hyperparameters
-    project: flytesnacks
-    domain: development
-    mode: dev
-    version: flytezen-main-16323b3
-    image: ghcr.io/org/flytezen
-    tag: main
-    wait: true
-    hyperparameters:
-        _target_: workflows.lrwine.Hyperparameters
+      _target_: flytezen.cli.execute.WorkflowConfigClass
+      name: training_workflow
+      package_path: src
+      import_path: flytezen.workflows.lrwine
+      config_class: Hyperparameters
+      project: flytesnacks
+      domain: development
+      mode: dev
+      version: flytezen-main-16323b3
+      image: ghcr.io/org/flytezen
+      tag: main
+      wait: true
+      hyperparameters:
+        _target_: flytezen.workflows.lrwine.Hyperparameters
         C: 0.3
         max_iter: 2500
 
     Example usage:
-        > python execute.py \
+        > flytezen -h
+        > flytezen \
             workflow.hyperparameters.C=0.4 \
             workflow.hyperparameters.max_iter=1200
-        > python execute.py \
+        > flytezen \
             --multirun workflow.hyperparameters.C=0.2,0.5
 
     Warning:
