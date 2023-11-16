@@ -39,7 +39,7 @@ def train_model(data: pd.DataFrame, hyperparameters: Hyperparameters) -> Logisti
 
 
 @workflow
-def training_workflow(hyperparameters: Hyperparameters) -> LogisticRegression:
+def training_workflow(hyperparameters: Hyperparameters = Hyperparameters()) -> LogisticRegression:
     """Put all of the steps together into a single workflow."""
     data = get_data()
     processed_data = process_data(data=data)
