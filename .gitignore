@@ -1,5 +1,8 @@
+# Ruff cache
+.ruff_cache
+
 # flyte config file
-config.yaml
+.flyte/config.yaml
 
 # hydra outputs
 outputs/
