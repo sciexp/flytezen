@@ -21,7 +21,7 @@ from rich.logging import RichHandler
 from rich.theme import Theme
 
 
-def configure_logging() -> logging.Logger:
+def configure_logging(logger_name: str = "flytezen") -> logging.Logger:
     """
     Configures logging with rich handler and checks for valid log level from environment.
     Defaults to `INFO` if no valid log level is found.
@@ -56,7 +56,7 @@ def configure_logging() -> logging.Logger:
         datefmt="[%X]",
         handlers=[rich_handler],
     )
-    return logging.getLogger("execute")
+    return logging.getLogger(logger_name)
 
 
 def check_required_env_vars(required_vars: List[str], logger: logging.Logger) -> bool:
@@ -77,21 +77,9 @@ def git_info_to_workflow_version(logger: logging.Logger) -> Tuple[str, str, str]
     Retrieves git information for workflow versioning.
     """
     try:
-        git_branch = (
-            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-            .strip()
-            .decode()
-        )
-        git_short_sha = (
-            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-            .strip()
-            .decode()
-        )
-        remote_url = (
-            subprocess.check_output(["git", "config", "--get", "remote.origin.url"])
-            .strip()
-            .decode()
-        )
+        git_branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode()
+        git_short_sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).strip().decode()
+        remote_url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"]).strip().decode()
         repo_name = remote_url.split("/")[-1].rstrip(".git")
         return repo_name, git_branch, git_short_sha
     except subprocess.CalledProcessError as e:
@@ -133,9 +121,7 @@ def wait_for_workflow_completion(
                 if completed_execution.error is None:
                     break
                 else:
-                    logger.error(
-                        f"Execution failed with error:\n\n{completed_execution.error}\n"
-                    )
+                    logger.error(f"Execution failed with error:\n\n{completed_execution.error}\n")
                     sys.exit(1)
             except FlyteTimeout:
                 synced_execution = remote.sync(execution)
@@ -162,19 +148,13 @@ def wait_for_workflow_completion(
         if synced_execution.closure.phase in [WorkflowExecutionPhase.RUNNING]:
             try:
                 if response in ["y", "yes"]:
-                    remote.terminate(
-                        execution, "KeyboardInterrupt confirmed termination"
-                    )
+                    remote.terminate(execution, "KeyboardInterrupt confirmed termination")
                     logger.info("Workflow execution terminated.")
                 else:
-                    logger.warning(
-                        f"\nExiting script without terminating workflow execution:\n\n{execution}\n"
-                    )
+                    logger.warning(f"\nExiting script without terminating workflow execution:\n\n{execution}\n")
             except FlyteSystemException as e:
                 logger.error(f"Error while trying to terminate the execution: {e}")
         else:
-            logger.info(
-                f"Workflow execution already in terminal state: {synced_execution.closure.phase}"
-            )
+            logger.info(f"Workflow execution already in terminal state: {synced_execution.closure.phase}")
 
         sys.exit()

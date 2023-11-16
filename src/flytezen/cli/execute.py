@@ -1,4 +1,4 @@
-import logging
+import importlib
 import os
 import pathlib
 import secrets
@@ -17,13 +17,16 @@ from flytekit.remote import FlyteRemote
 from hydra.conf import HydraConf
 from hydra_zen import ZenStore, to_yaml, zen
 
-from execution_utils import (
+from flytezen.cli.execution_utils import (
     check_required_env_vars,
-    configure_logging,
+    # configure_logging,
     git_info_to_workflow_version,
-    load_workflow,
+    # load_workflow,
     wait_for_workflow_completion,
 )
+from flytezen.logging_utils import configure_logging
+
+logger = configure_logging("execute")
 
 
 @dataclass_json
@@ -33,13 +36,15 @@ class WorkflowConfigClass:
     A dataclass representing configuration for a workflow execution.
 
     Attributes:
+        name (str): The name of the workflow function to execute.
+        package_path (str): The path to the workflow package.
         import_path (str): The import path of the workflow function to execute.
         config_class (str): The name of the configuration class containing hyperparameters.
         project (str): The Flyte project in which to register or execute the workflow.
         domain (str): The Flyte domain in which to register or execute the workflow.
-        version (str): The version of the workflow, including a git commit hash or other identifier(s).
         mode (str): Mode of workflow registration - 'dev' for fast registration and
                     'prod' for manual registration.
+        version (str): The version of the workflow, including a git commit hash or other identifier(s).
         image (str): The container image FQN to use for executing the workflow.
         tag (str): The tag to append to the container image FQN to use for executing the workflow.
         wait (bool): Flag indicating whether to wait for the workflow execution to complete or run async.
@@ -48,6 +53,7 @@ class WorkflowConfigClass:
                                workflow module.
     """
 
+    name: str
     package_path: str
     import_path: str
     config_class: str
@@ -98,7 +104,9 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
     tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
     rich.print(tree)
 
-    _, entity = load_workflow(workflow.import_path)
+    # _, entity = load_workflow(workflow.import_path)
+    module = importlib.import_module(workflow.import_path)
+    entity = getattr(module, workflow.name)
     remote = FlyteRemote(
         config=FlyteConfig.auto(),
         default_project=workflow.project,
@@ -112,9 +120,7 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
             "Please use 'prod' mode for production or CI environments.\n\n"
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
-            logger.debug(
-                f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
-            )
+            logger.debug(f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n")
             _, upload_url = remote.fast_package(
                 pathlib.Path(workflow.package_path),
                 output=tmp_dir,
@@ -159,7 +165,7 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
         wait_for_workflow_completion(execution, remote, logger)
 
 
-def main(logger: logging.Logger) -> None:
+def main() -> None:
     """
     Main function that executes the workflow on the remote in one of two modes determined
     by "WORKFLOW_REGISTRATION_MODE":
@@ -181,6 +187,7 @@ def main(logger: logging.Logger) -> None:
 
     check_required_env_vars(
         [
+            "WORKFLOW_NAME",
             "WORKFLOW_PACKAGE_PATH",
             "WORKFLOW_IMPORT_PATH",
             "WORKFLOW_CONFIG_CLASS_NAME",
@@ -211,17 +218,17 @@ def main(logger: logging.Logger) -> None:
 
     repo_name, git_branch, git_short_sha = git_info_to_workflow_version(logger)
     workflow_import_path = os.environ.get("WORKFLOW_IMPORT_PATH")
-    module, _ = load_workflow(workflow_import_path)
+    # workflow_module_import_path = os.environ.get("WORKFLOW_MODULE_IMPORT_PATH")
+    # module, _ = load_workflow(workflow_import_path)
+    module = importlib.import_module(workflow_import_path)
+
     workflow_config_class_name = os.environ.get("WORKFLOW_CONFIG_CLASS_NAME")
     config_class = getattr(module, workflow_config_class_name)
 
     workflow_registration_mode = os.environ.get("WORKFLOW_REGISTRATION_MODE")
     if workflow_registration_mode == "dev":
         image_tag = git_branch
-        workflow_version = (
-            f"{repo_name}-{git_branch}-{git_short_sha}"
-            f"-dev-{secrets.token_urlsafe(2)}"
-        )
+        workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}-dev-{secrets.token_urlsafe(2)}"
     elif workflow_registration_mode == "prod":
         image_tag = git_short_sha
         workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}"
@@ -235,6 +242,7 @@ def main(logger: logging.Logger) -> None:
     store(
         execute_workflow,
         workflow=WorkflowConfigClass(
+            name=os.environ.get("WORKFLOW_NAME"),
             package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
             import_path=workflow_import_path,
             config_class=workflow_config_class_name,
@@ -296,5 +304,4 @@ if __name__ == "__main__":
         These are set automatically based on workflow.mode and stored
         in the config for reference.
     """
-    logger = configure_logging()
-    main(logger)
+    main()
