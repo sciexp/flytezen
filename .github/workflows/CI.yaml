@@ -61,7 +61,7 @@ jobs:
               .storage.stow.config.project_id = strenv(GCP_PROJECT_ID) | \
               .storage.stow.config.scopes = strenv(GCP_STORAGE_SCOPES) | \
               .storage.container = strenv(GCP_STORAGE_CONTAINER)' \
-              config-template.yaml > config.yaml"
+              .flyte/config-template.yaml > .flyte/config.yaml"
       env:
         FLYTE_CLUSTER_ENDPOINT: ${{ secrets.FLYTE_CLUSTER_ENDPOINT }}
         GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

@@ -244,12 +244,12 @@ ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	PAGER=cat gh variable list --repo=$(GH_REPO)
 
 update_config: ## Update flytectl config file from template.
-	yq ea \
+	yq e \
 		'.admin.endpoint = strenv(FLYTE_CLUSTER_ENDPOINT) | \
 		.storage.stow.config.project_id = strenv(GCP_PROJECT_ID) | \
 		.storage.stow.config.scopes = strenv(GCP_STORAGE_SCOPES) | \
 		.storage.container = strenv(GCP_STORAGE_CONTAINER)' \
-		config-template.yaml > config.yaml
+		.flyte/config-template.yaml > .flyte/config.yaml
 
 approve_prs: ## Approve github pull requests from bots: PR_ENTRIES="2-5 10 12-18"
 	for entry in $(PR_ENTRIES); do \
