@@ -43,7 +43,7 @@ jobs:
         skip_after_successful_duplicate: 'true'
 
   set-debug:
-    name: Set debug flag
+    name: set-debug-flag
     runs-on: ubuntu-latest
     outputs:
       debug: ${{ steps.set-debug.outputs.debug }}
