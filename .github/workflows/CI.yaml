@@ -129,7 +129,7 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: flyte-config
-        path: .
+        path: .flyte/
 
     - name: Setup tmate debug session
       if: ${{ github.event.inputs.debug_enabled == 'true' }}
