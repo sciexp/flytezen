@@ -133,17 +133,17 @@ package_and_register: package_workflows register_workflows
 #-------------------
 
 run_help: ## Print hydra help for execute script.
-	python execute.py --help
+	flytezen --help
 
 .PHONY: run
 run: ## Run registered workflow (sync).
-	python execute.py
+	flytezen
 
 multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
-	python execute.py --multirun workflow.hyperparameters.C=0.2,0.5
+	flytezen --multirun workflow.hyperparameters.C=0.2,0.5
 
 run_async: ## Run registered workflow (async).
-	python execute.py workflow.wait=False
+	flytezen workflow.wait=False
 
 run_unregistered: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
