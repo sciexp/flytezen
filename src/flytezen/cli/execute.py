@@ -296,9 +296,16 @@ if __name__ == "__main__":
         > flytezen \
             --multirun workflow.hyperparameters.C=0.2,0.5
 
+        See the git-ignored `./outputs` or `./multirun` directories for the hydra
+        config output. These are also stored as an artifact of the CI actions workflow
+        in the `Upload config artifact` step.
+
     Warning:
-        Do not override `workflow.version` or `workflow.tag`.
-        These are set automatically based on workflow.mode and stored
-        in the config for reference.
+        Hydra command-line overrides are only supported for hyperparameters.
+        Do not override workflow-level parameters. This will lead to unexpected behavior.
+        You can modify workflow parameters with `.env` or environment variables.
+        Note  `workflow.version` and `workflow.tag` are determined
+        automatically in python based on `workflow.mode`. The workflow parameters are
+        stored in the hydra config output for reference.
     """
     main()
