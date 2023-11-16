@@ -1,4 +1,3 @@
-import importlib
 import logging
 import os
 import queue
@@ -7,56 +6,13 @@ import sys
 import threading
 import time
 from datetime import timedelta
-from types import ModuleType
 from typing import List, Tuple
 
 from flytekit import WorkflowExecutionPhase
-from flytekit.core.workflow import PythonFunctionWorkflow
 from flytekit.exceptions.system import FlyteSystemException
 from flytekit.exceptions.user import FlyteTimeout
 from flytekit.remote import FlyteRemote
 from flytekit.remote.executions import FlyteWorkflowExecution
-from rich.console import Console
-from rich.logging import RichHandler
-from rich.theme import Theme
-
-
-def configure_logging(logger_name: str = "flytezen") -> logging.Logger:
-    """
-    Configures logging with rich handler and checks for valid log level from environment.
-    Defaults to `INFO` if no valid log level is found.
-    """
-    console_theme = Theme(
-        {
-            "logging.level.info": "dim cyan",
-            "logging.level.warning": "magenta",
-            "logging.level.error": "bold red",
-            "logging.level.debug": "green",
-        }
-    )
-    console = Console(theme=console_theme)
-    rich_handler = RichHandler(
-        console=console,
-        rich_tracebacks=True,
-        show_time=True,
-        show_level=True,
-        show_path=False,
-        markup=True,
-        log_time_format="[%X]",
-    )
-    valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-
-    if log_level not in valid_log_levels:
-        log_level = "INFO"
-
-    logging.basicConfig(
-        level=log_level,
-        format="%(name)s %(message)s",
-        datefmt="[%X]",
-        handlers=[rich_handler],
-    )
-    return logging.getLogger(logger_name)
 
 
 def check_required_env_vars(required_vars: List[str], logger: logging.Logger) -> bool:
@@ -85,16 +41,6 @@ def git_info_to_workflow_version(logger: logging.Logger) -> Tuple[str, str, str]
     except subprocess.CalledProcessError as e:
         logger.error(f"Error obtaining git information: {e}")
         raise
-
-
-def load_workflow(workflow_import_path: str) -> (ModuleType, PythonFunctionWorkflow):
-    """
-    Loads the specified workflow.
-    """
-    package_name, module_name, workflow_name = workflow_import_path.split(".")
-    workflow_module = importlib.import_module(f"{package_name}.{module_name}")
-    workflow_function = getattr(workflow_module, workflow_name)
-    return workflow_module, workflow_function
 
 
 def get_user_input(input_queue):
