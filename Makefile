@@ -254,6 +254,7 @@ ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	PAGER=cat gh variable list --repo=$(GH_REPO)
 	gh variable set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
 	gh variable set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
+	gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
 	gh variable set WORKFLOW_PACKAGE_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_PACKAGE_PATH)"
 	gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
 	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
