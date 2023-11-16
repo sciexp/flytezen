@@ -100,8 +100,7 @@ jobs:
 
 
   execute-workflow:
-    # needs: [config, build-images, set-debug]
-    needs: [config, set-debug]
+    needs: [config, build-images, set-debug]
     runs-on: ubuntu-latest
     strategy:
       matrix:
