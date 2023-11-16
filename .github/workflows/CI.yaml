@@ -134,19 +134,6 @@ jobs:
       with:
         python_version: ${{ matrix.python_version }}
         debug_enabled: ${{ needs.set-debug.outputs.debug }}
-    # - name: Set up Python
-    #   id: setup-python
-    #   uses: actions/setup-python@v4
-    #   with:
-    #     python-version: "3.10"
-    #     cache: 'pip'
-
-    # - name: Install execution dependencies
-    #   run: |
-    #     python -m pip install --upgrade pip
-    #     pip install -r requirements.txt -r requirements-execute.txt
-    #     pip freeze
-    #     pip list
 
     - name: Download Flyte config
       uses: actions/download-artifact@v3
