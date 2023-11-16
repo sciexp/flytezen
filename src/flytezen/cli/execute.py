@@ -19,9 +19,7 @@ from hydra_zen import ZenStore, to_yaml, zen
 
 from flytezen.cli.execution_utils import (
     check_required_env_vars,
-    # configure_logging,
     git_info_to_workflow_version,
-    # load_workflow,
     wait_for_workflow_completion,
 )
 from flytezen.logging_utils import configure_logging
@@ -104,7 +102,6 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
     tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
     rich.print(tree)
 
-    # _, entity = load_workflow(workflow.import_path)
     module = importlib.import_module(workflow.import_path)
     entity = getattr(module, workflow.name)
     remote = FlyteRemote(
@@ -218,8 +215,6 @@ def main() -> None:
 
     repo_name, git_branch, git_short_sha = git_info_to_workflow_version(logger)
     workflow_import_path = os.environ.get("WORKFLOW_IMPORT_PATH")
-    # workflow_module_import_path = os.environ.get("WORKFLOW_MODULE_IMPORT_PATH")
-    # module, _ = load_workflow(workflow_import_path)
     module = importlib.import_module(workflow_import_path)
 
     workflow_config_class_name = os.environ.get("WORKFLOW_CONFIG_CLASS_NAME")
