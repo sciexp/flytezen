@@ -4,8 +4,8 @@ import pathlib
 import secrets
 import sys
 import tempfile
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Dict
 
 import rich.syntax
 import rich.tree
@@ -15,7 +15,8 @@ from flytekit.configuration import Config as FlyteConfig
 from flytekit.configuration import FastSerializationSettings, ImageConfig, SerializationSettings
 from flytekit.remote import FlyteRemote
 from hydra.conf import HydraConf
-from hydra_zen import ZenStore, to_yaml, zen
+from hydra_zen import ZenStore, make_custom_builds_fn, to_yaml, zen
+from sklearn.linear_model import LogisticRegression
 
 from flytezen.cli.execution_utils import (
     check_required_env_vars,
@@ -25,11 +26,13 @@ from flytezen.cli.execution_utils import (
 from flytezen.logging_utils import configure_logging
 
 logger = configure_logging("execute")
+builds = make_custom_builds_fn(populate_full_signature=True)
+
 
 
 @dataclass_json
 @dataclass
-class WorkflowConfigClass:
+class ExecutionConfigClass:
     """
     A dataclass representing configuration for a workflow execution.
 
@@ -51,21 +54,35 @@ class WorkflowConfigClass:
                                workflow module.
     """
 
-    name: str
-    package_path: str
-    import_path: str
-    config_class: str
-    project: str
-    domain: str
-    mode: str
-    version: str
-    image: str
-    tag: str
-    wait: bool
-    hyperparameters: Any
+    name: str = "training_workflow"
+    package_path: str = "src"
+    import_path: str = "flytezen.workflows.lrwine"
+    config_class: str = "Hyperparameters"
+    project: str = "flytesnacks"
+    domain: str = "development"
+    mode: str = "dev"
+    image: str = "ghcr.io/sciexp/flytezen"
+    tag: str = "main"
+    wait: bool = True
+    version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower()
+    hyperparameters: Dict[str, Any] = field(default_factory=lambda: {"hyperparameters": LogisticRegression()})
 
 
-def execute_workflow(workflow: WorkflowConfigClass) -> None:
+# def execute_workflow(workflow: WorkflowConfigClass) -> None:
+def execute_workflow(
+        name: str = "training_workflow",
+        package_path: str = "src",
+        import_path: str = "flytezen.workflows.lrwine",
+        config_class: str = "Hyperparameters",
+        project: str = "flytesnacks",
+        domain: str = "development",
+        mode: str = "dev",
+        image: str = "ghcr.io/sciexp/flytezen",
+        tag: str = "main",
+        wait: bool = True,
+        version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower(),
+        inputs: Dict[str, Any] = {"hyperparameters": builds(LogisticRegression)},
+    ) -> None:
     """
     Executes the given workflow based on the Hydra configuration, supporting two modes
     of execution controlled by 'mode':
@@ -82,7 +99,7 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
 
     - 'prod': Registers the workflow on the remote and then executes it, intended for
       production or CI environments. This mode executes the workflow against a container
-      image that has been built and pushed to the registry specified in workflow.image.
+      image that has been built and pushed to the registry specified in execution.image.
       The container image used in this mode is tagged with the git short SHA. This mode
       requires that the container image with code equivalent to the current local copy has
       been built, typically in CI environments just prior to executing the workflow.
@@ -97,21 +114,21 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
     Raises:
         Sets exit status one if 'mode' has an invalid value.
     """
-    config_yaml = to_yaml(workflow)
+    config_yaml = to_yaml(execution)
     tree = rich.tree.Tree("WORKFLOW", style="dim", guide_style="dim")
     tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
     rich.print(tree)
 
-    module = importlib.import_module(workflow.import_path)
-    entity = getattr(module, workflow.name)
+    module = importlib.import_module(import_path)
+    entity = getattr(module, name)
     remote = FlyteRemote(
         config=FlyteConfig.auto(),
-        default_project=workflow.project,
-        default_domain=workflow.domain,
+        default_project=project,
+        default_domain=domain,
     )
-    image_config = ImageConfig.auto(img_name=f"{workflow.image}:{workflow.tag}")
+    image_config = ImageConfig.auto(img_name=f"{image}:{tag}")
 
-    if workflow.mode == "dev":
+    if mode == "dev":
         logger.warning(
             "This mode is intended for development purposes only.\n\n"
             "Please use 'prod' mode for production or CI environments.\n\n"
@@ -119,7 +136,7 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             logger.debug(f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n")
             _, upload_url = remote.fast_package(
-                pathlib.Path(workflow.package_path),
+                pathlib.Path(package_path),
                 output=tmp_dir,
             )
         logger.info(f"Workflow package uploaded to:\n\n  {upload_url}\n")
@@ -132,12 +149,12 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
                 distribution_location=upload_url,
             ),
         )
-    elif workflow.mode == "prod":
-        logger.info(f"Registering workflow:\n\n\t{workflow.import_path}\n")
+    elif mode == "prod":
+        logger.info(f"Registering workflow:\n\n\t{import_path}\n")
         serialization_settings = SerializationSettings(image_config=image_config)
     else:
         logger.error(
-            f"Invalid workflow registration mode: {workflow.mode}. "
+            f"Invalid workflow registration mode: {mode}. "
             "Please set WORKFLOW_REGISTRATION_MODE to either 'dev'"
             "or 'prod' in your environment."
         )
@@ -146,19 +163,20 @@ def execute_workflow(workflow: WorkflowConfigClass) -> None:
     remote.register_workflow(
         entity=entity,
         serialization_settings=serialization_settings,
-        version=workflow.version,
+        version=version,
     )
     execution = remote.execute(
         entity=entity,
-        inputs={"hyperparameters": workflow.hyperparameters},
-        version=workflow.version,
-        execution_name_prefix=workflow.version,
+        # inputs={"hyperparameters": hyperparameters},
+        inputs=inputs,
+        version=version,
+        execution_name_prefix=version,
         wait=False,
     )
     logger.info(f"Execution submitted:\n\n{execution}\n")
     logger.info(f"Execution url:\n\n{remote.generate_console_url(execution)}\n")
 
-    if workflow.wait:
+    if wait:
         wait_for_workflow_completion(execution, remote, logger)
 
 
@@ -196,7 +214,7 @@ def main() -> None:
         logger,
     ) or sys.exit(1)
 
-    store = ZenStore(deferred_hydra_store=False)
+    store = ZenStore(name="flytezen", deferred_hydra_store=False)
 
     hydra_conf = HydraConf(
         defaults=[
@@ -216,6 +234,8 @@ def main() -> None:
     repo_name, git_branch, git_short_sha = git_info_to_workflow_version(logger)
     workflow_import_path = os.environ.get("WORKFLOW_IMPORT_PATH")
     module = importlib.import_module(workflow_import_path)
+    workflow = getattr(module, os.environ.get("WORKFLOW_NAME"))
+    # WorkflowConf = builds(workflow)
 
     workflow_config_class_name = os.environ.get("WORKFLOW_CONFIG_CLASS_NAME")
     config_class = getattr(module, workflow_config_class_name)
@@ -234,32 +254,50 @@ def main() -> None:
         )
         sys.exit(1)
 
-    workflow_config = WorkflowConfigClass(
-        name=os.environ.get("WORKFLOW_NAME"),
-        package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
-        import_path=workflow_import_path,
-        config_class=workflow_config_class_name,
-        project=os.environ.get("WORKFLOW_PROJECT"),
-        domain=os.environ.get("WORKFLOW_DOMAIN"),
-        mode=workflow_registration_mode,
-        version=workflow_version.lower(),
-        image=os.environ.get("WORKFLOW_IMAGE"),
-        tag=image_tag,
-        wait=True,
-        hyperparameters=config_class(),
-    )
+    # workflow_config = ExecutionConfigClass(
+    #     name=os.environ.get("WORKFLOW_NAME"),
+    #     package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
+    #     import_path=workflow_import_path,
+    #     config_class=workflow_config_class_name,
+    #     project=os.environ.get("WORKFLOW_PROJECT"),
+    #     domain=os.environ.get("WORKFLOW_DOMAIN"),
+    #     mode=workflow_registration_mode,
+    #     version=workflow_version.lower(),
+    #     image=os.environ.get("WORKFLOW_IMAGE"),
+    #     tag=image_tag,
+    #     wait=True,
+    #     hyperparameters=config_class(),
+    # )
 
+    ExecutionConf = builds(execute_workflow,
+        # name=os.environ.get("WORKFLOW_NAME"),
+        # package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
+        # import_path=workflow_import_path,
+        # config_class=workflow_config_class_name,
+        # project=os.environ.get("WORKFLOW_PROJECT"),
+        # domain=os.environ.get("WORKFLOW_DOMAIN"),
+        # mode=workflow_registration_mode,
+        # version=workflow_version.lower(),
+        # image=os.environ.get("WORKFLOW_IMAGE"),
+        # tag=image_tag,
+        # wait=True,
+        # hyperparameters=config_class(),
+    )
+    # store(
+    #     execute_workflow,
+    #     workflow=workflow_config,
+    # )
     store(
-        execute_workflow,
-        workflow=workflow_config,
+        ExecutionConf,
+        name="execute_workflow",
     )
 
     store.add_to_hydra_store()
 
     zen(execute_workflow).hydra_main(
-        config_path=None,
         config_name="execute_workflow",
         version_base="1.3",
+        config_path=None,
     )
 
 
@@ -272,8 +310,8 @@ if __name__ == "__main__":
     Override anything in the config (foo.bar=value)
 
     _target_: flytezen.cli.execute.execute_workflow
-    workflow:
-      _target_: flytezen.cli.execute.WorkflowConfigClass
+    execution:
+      _target_: flytezen.cli.execute.ExecutionConfigClass
       name: training_workflow
       package_path: src
       import_path: flytezen.workflows.lrwine
@@ -293,10 +331,10 @@ if __name__ == "__main__":
     Example usage:
         > flytezen -h
         > flytezen \
-            workflow.hyperparameters.C=0.4 \
-            workflow.hyperparameters.max_iter=1200
+            execution.hyperparameters.C=0.4 \
+            execution.hyperparameters.max_iter=1200
         > flytezen \
-            --multirun workflow.hyperparameters.C=0.2,0.5
+            --multirun execution.hyperparameters.C=0.2,0.5
 
         See the git-ignored `./outputs` or `./multirun` directories for the hydra
         config output. These are also stored as an artifact of the CI actions workflow
@@ -306,8 +344,8 @@ if __name__ == "__main__":
         Hydra command-line overrides are only supported for hyperparameters.
         Do not override workflow-level parameters. This will lead to unexpected behavior.
         You can modify workflow parameters with `.env` or environment variables.
-        Note  `workflow.version` and `workflow.tag` are determined
-        automatically in python based on `workflow.mode`. The workflow parameters are
+        Note  `execution.version` and `execution.tag` are determined
+        automatically in python based on `execution.mode`. The workflow parameters are
         stored in the hydra config output for reference.
     """
     main()
