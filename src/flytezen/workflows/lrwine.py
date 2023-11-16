@@ -18,9 +18,9 @@ class Hyperparameters:
 @task
 def get_data() -> pd.DataFrame:
     """Get the wine dataset."""
-    import time
+    # import time
 
-    time.sleep(3600)
+    # time.sleep(3600)
     return load_wine(as_frame=True).frame
 
 
