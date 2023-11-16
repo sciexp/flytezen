@@ -234,22 +234,24 @@ def main() -> None:
         )
         sys.exit(1)
 
+    workflow_config = WorkflowConfigClass(
+        name=os.environ.get("WORKFLOW_NAME"),
+        package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
+        import_path=workflow_import_path,
+        config_class=workflow_config_class_name,
+        project=os.environ.get("WORKFLOW_PROJECT"),
+        domain=os.environ.get("WORKFLOW_DOMAIN"),
+        mode=workflow_registration_mode,
+        version=workflow_version.lower(),
+        image=os.environ.get("WORKFLOW_IMAGE"),
+        tag=image_tag,
+        wait=True,
+        hyperparameters=config_class(),
+    )
+
     store(
         execute_workflow,
-        workflow=WorkflowConfigClass(
-            name=os.environ.get("WORKFLOW_NAME"),
-            package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
-            import_path=workflow_import_path,
-            config_class=workflow_config_class_name,
-            project=os.environ.get("WORKFLOW_PROJECT"),
-            domain=os.environ.get("WORKFLOW_DOMAIN"),
-            mode=workflow_registration_mode,
-            version=workflow_version.lower(),
-            image=os.environ.get("WORKFLOW_IMAGE"),
-            tag=image_tag,
-            wait=True,
-            hyperparameters=config_class(),
-        ),
+        workflow=workflow_config,
     )
 
     store.add_to_hydra_store()
