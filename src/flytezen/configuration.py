@@ -1,12 +1,12 @@
 import inspect
 from dataclasses import dataclass, field
-from typing import Any, Callable, Type, get_type_hints
+from typing import Any, Callable, Optional, Type, get_type_hints
 
 from dataclasses_json import dataclass_json
 from sklearn.linear_model import LogisticRegression
 
 
-def infer_type_from_default(default: Any) -> Any:
+def infer_type_from_default(default: Any, name: str) -> Type:
     """
     Infers the type from the default value of a parameter. Supports basic types like bool, int, float, str, list, and dict.
 
@@ -17,16 +17,31 @@ def infer_type_from_default(default: Any) -> Any:
         Type: The inferred type based on the default value, or Any if the type cannot be inferred.
 
     Examples:
-        >>> infer_type_from_default(5)
+        >>> infer_type_from_default(5, "example_int")
         <class 'int'>
-        >>> infer_type_from_default(True)
+        >>> infer_type_from_default(True, "example_bool")
         <class 'bool'>
-        >>> infer_type_from_default("example")
+        >>> infer_type_from_default("example", "example_str")
         <class 'str'>
-        >>> infer_type_from_default(None)  # For None, it defaults to Any
-        typing.Any
+        >>> infer_type_from_default(None, )  # For None, it defaults to Any
+        typing.Optional[typing.Any]
     """
-    if isinstance(default, bool):
+
+    logistic_regression_custom_types = {
+        "penalty": Optional[str],
+        "class_weight": Optional[dict],
+        "random_state": Optional[int],
+        "n_jobs": Optional[int],
+        "l1_ratio": Optional[float],
+    }
+
+    # Use custom type mapping if applicable
+    if name in logistic_regression_custom_types:
+        return logistic_regression_custom_types[name]
+
+    if default is None:
+        return Optional[str]
+    elif isinstance(default, bool):
         return bool
     elif isinstance(default, int):
         return int
@@ -39,7 +54,7 @@ def infer_type_from_default(default: Any) -> Any:
     elif isinstance(default, dict):
         return dict
     else:
-        return Any
+        return Optional[str]
 
 
 def create_dataclass_from_callable(callable_obj: Callable) -> Type:
@@ -62,6 +77,12 @@ def create_dataclass_from_callable(callable_obj: Callable) -> Type:
         True
         >>> LogisticRegressionInterface.__annotations__['fit_intercept']
         <class 'bool'>
+        >>> isinstance(LogisticRegressionInterface(), LogisticRegressionInterface)
+        True
+        >>> # Testing if the schema method works
+        >>> schema = LogisticRegressionInterface().schema()
+        >>> 'LogisticregressioninterfaceSchema' in str(type(schema))
+        True
 
         # Testing with a simple function
         >>> def example_func(a: int, b: str = 'hello', c: bool = False):
@@ -89,7 +110,7 @@ def create_dataclass_from_callable(callable_obj: Callable) -> Type:
         if name == "self":
             continue
 
-        field_type = type_hints.get(name, infer_type_from_default(param.default))
+        field_type = type_hints.get(name, infer_type_from_default(param.default, name))
         default = param.default if param.default is not inspect.Parameter.empty else field(default_factory=lambda: None)
         class_attrs[name] = field(default=default) if default is field else default
         class_attrs["__annotations__"][name] = field_type
@@ -98,5 +119,6 @@ def create_dataclass_from_callable(callable_obj: Callable) -> Type:
     new_class = type(dataclass_name, (object,), class_attrs)
 
     return dataclass_json(dataclass(new_class))
+
 
 LogisticRegressionInterface = create_dataclass_from_callable(LogisticRegression)
