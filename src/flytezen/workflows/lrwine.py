@@ -1,18 +1,21 @@
-from dataclasses import asdict, dataclass
-from typing import Optional
+from dataclasses import asdict
 
 import pandas as pd
-from dataclasses_json import dataclass_json
 from flytekit import task, workflow
 from sklearn.datasets import load_wine
 from sklearn.linear_model import LogisticRegression
 
+# from flytezen.configuration import create_dataclass_from_callable
+from flytezen.configuration import LogisticRegressionInterface
 
-@dataclass_json
-@dataclass
-class Hyperparameters:
-    C: Optional[float] = 0.3
-    max_iter: Optional[int] = 2500
+# @dataclass_json
+# @dataclass
+# class Hyperparameters:
+#     C: Optional[float] = 0.3
+#     max_iter: Optional[int] = 2500
+
+
+# LogisticRegressionInterface = create_dataclass_from_callable(LogisticRegression)
 
 
 @task
@@ -31,15 +34,15 @@ def process_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 @task
-def train_model(data: pd.DataFrame, logistic_regression: LogisticRegression) -> LogisticRegression:
+def train_model(data: pd.DataFrame, logistic_regression: LogisticRegressionInterface) -> LogisticRegression:
     """Train a model on the wine dataset."""
     features = data.drop("target", axis="columns")
     target = data["target"]
-    return logistic_regression.fit(features, target)
+    return LogisticRegression(**asdict(logistic_regression)).fit(features, target)
 
 
 @workflow
-def training_workflow(logistic_regression: LogisticRegression) -> LogisticRegression:
+def training_workflow(logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface()) -> LogisticRegression:
     """Put all of the steps together into a single workflow."""
     data = get_data()
     processed_data = process_data(data=data)

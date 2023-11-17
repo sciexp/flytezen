@@ -4,20 +4,17 @@ import pathlib
 import secrets
 import sys
 import tempfile
-from dataclasses import dataclass, field
 from textwrap import dedent
 from typing import Any, Dict
 
 import rich.syntax
 import rich.tree
-from dataclasses_json import dataclass_json
 from dotenv import load_dotenv
 from flytekit.configuration import Config as FlyteConfig
 from flytekit.configuration import FastSerializationSettings, ImageConfig, SerializationSettings
 from flytekit.remote import FlyteRemote
 from hydra.conf import HelpConf, HydraConf, JobConf
 from hydra_zen import ZenStore, make_custom_builds_fn, to_yaml, zen
-from sklearn.linear_model import LogisticRegression
 
 from flytezen.cli.execution_utils import (
     check_required_env_vars,
@@ -51,6 +48,10 @@ builds = make_custom_builds_fn(populate_full_signature=True)
 #     hyperparameters: Dict[str, Any] = field(default_factory=lambda: {"hyperparameters": LogisticRegression()})
 
 
+# from flytezen.workflows.lrwine import Hyperparameters
+from flytezen.configuration import LogisticRegressionInterface
+
+
 # def execute_workflow(workflow: WorkflowConfigClass) -> None:
 def execute_workflow(
     name: str = "training_workflow",
@@ -64,7 +65,7 @@ def execute_workflow(
     tag: str = "main",
     wait: bool = True,
     version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower(),
-    inputs: Dict[str, Any] = {"logistic_regression": builds(LogisticRegression)},
+    inputs: Dict[str, Any] = {"logistic_regression": builds(LogisticRegressionInterface)},
 ) -> None:
     """
     Executes the given workflow based on the Hydra configuration, supporting two modes
@@ -269,7 +270,7 @@ def main() -> None:
     # WorkflowConf = builds(workflow)
 
     workflow_config_class_name = os.environ.get("WORKFLOW_CONFIG_CLASS_NAME")
-    config_class = getattr(module, workflow_config_class_name)
+    # config_class = getattr(module, workflow_config_class_name)
 
     workflow_registration_mode = os.environ.get("WORKFLOW_REGISTRATION_MODE")
     if workflow_registration_mode == "dev":
