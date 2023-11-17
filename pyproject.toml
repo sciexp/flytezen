@@ -144,7 +144,7 @@ platforms = [
 flytezen = "flytezen.cli:main"
 
 [tool.pytest.ini_options]
-addopts = "--cov=src/flytezen/ --cov-report=term-missing"
+addopts = "-rA --xdoc --cov=src/flytezen/ --cov-report=term-missing"
 asyncio_mode = "strict"
 
 [tool.coverage.paths]
