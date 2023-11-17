@@ -2,6 +2,9 @@ import inspect
 from dataclasses import dataclass, field
 from typing import Any, Callable, Type, get_type_hints
 
+from dataclasses_json import dataclass_json
+from sklearn.linear_model import LogisticRegression
+
 
 def infer_type_from_default(default: Any) -> Any:
     """
@@ -70,6 +73,8 @@ def create_dataclass_from_callable(callable_obj: Callable) -> Type:
         >>> example_instance.b
         'hello'
     """
+    inspect.signature(callable_obj, follow_wrapped=True)
+
     if inspect.isclass(callable_obj):
         func = callable_obj.__init__
     else:
@@ -91,4 +96,7 @@ def create_dataclass_from_callable(callable_obj: Callable) -> Type:
 
     dataclass_name = f"{callable_obj.__name__}Interface"
     new_class = type(dataclass_name, (object,), class_attrs)
-    return dataclass(new_class)
+
+    return dataclass_json(dataclass(new_class))
+
+LogisticRegressionInterface = create_dataclass_from_callable(LogisticRegression)
