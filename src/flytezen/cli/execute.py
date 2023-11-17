@@ -24,7 +24,7 @@ from flytezen.cli.execution_utils import (
     git_info_to_workflow_version,
     wait_for_workflow_completion,
 )
-from flytezen.logging_utils import configure_logging
+from flytezen.logging import configure_logging
 
 logger = configure_logging("execute")
 builds = make_custom_builds_fn(populate_full_signature=True)
