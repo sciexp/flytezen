@@ -31,19 +31,19 @@ def process_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 @task
-def train_model(data: pd.DataFrame, hyperparameters: Hyperparameters) -> LogisticRegression:
+def train_model(data: pd.DataFrame, logistic_regression: LogisticRegression) -> LogisticRegression:
     """Train a model on the wine dataset."""
     features = data.drop("target", axis="columns")
     target = data["target"]
-    return LogisticRegression(**asdict(hyperparameters)).fit(features, target)
+    return logistic_regression.fit(features, target)
 
 
 @workflow
-def training_workflow(hyperparameters: Hyperparameters = Hyperparameters()) -> LogisticRegression:
+def training_workflow(logistic_regression: LogisticRegression) -> LogisticRegression:
     """Put all of the steps together into a single workflow."""
     data = get_data()
     processed_data = process_data(data=data)
     return train_model(
         data=processed_data,
-        hyperparameters=hyperparameters,
+        logistic_regression=logistic_regression,
     )
