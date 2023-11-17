@@ -5,6 +5,7 @@ import secrets
 import sys
 import tempfile
 from dataclasses import dataclass, field
+from textwrap import dedent
 from typing import Any, Dict
 
 import rich.syntax
@@ -14,7 +15,7 @@ from dotenv import load_dotenv
 from flytekit.configuration import Config as FlyteConfig
 from flytekit.configuration import FastSerializationSettings, ImageConfig, SerializationSettings
 from flytekit.remote import FlyteRemote
-from hydra.conf import HydraConf
+from hydra.conf import HelpConf, HydraConf, JobConf
 from hydra_zen import ZenStore, make_custom_builds_fn, to_yaml, zen
 from sklearn.linear_model import LogisticRegression
 
@@ -29,29 +30,11 @@ logger = configure_logging("execute")
 builds = make_custom_builds_fn(populate_full_signature=True)
 
 
-
 @dataclass_json
 @dataclass
 class ExecutionConfigClass:
     """
     A dataclass representing configuration for a workflow execution.
-
-    Attributes:
-        name (str): The name of the workflow function to execute.
-        package_path (str): The path to the workflow package.
-        import_path (str): The import path of the workflow function to execute.
-        config_class (str): The name of the configuration class containing hyperparameters.
-        project (str): The Flyte project in which to register or execute the workflow.
-        domain (str): The Flyte domain in which to register or execute the workflow.
-        mode (str): Mode of workflow registration - 'dev' for fast registration and
-                    'prod' for manual registration.
-        version (str): The version of the workflow, including a git commit hash or other identifier(s).
-        image (str): The container image FQN to use for executing the workflow.
-        tag (str): The tag to append to the container image FQN to use for executing the workflow.
-        wait (bool): Flag indicating whether to wait for the workflow execution to complete or run async.
-        hyperparameters (Any): An instance of the configuration class defined by `config_class`, containing
-                               hyperparameters for the workflow. It is assumed this class is defined in the
-                               workflow module.
     """
 
     name: str = "training_workflow"
@@ -70,19 +53,19 @@ class ExecutionConfigClass:
 
 # def execute_workflow(workflow: WorkflowConfigClass) -> None:
 def execute_workflow(
-        name: str = "training_workflow",
-        package_path: str = "src",
-        import_path: str = "flytezen.workflows.lrwine",
-        config_class: str = "Hyperparameters",
-        project: str = "flytesnacks",
-        domain: str = "development",
-        mode: str = "dev",
-        image: str = "ghcr.io/sciexp/flytezen",
-        tag: str = "main",
-        wait: bool = True,
-        version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower(),
-        inputs: Dict[str, Any] = {"hyperparameters": builds(LogisticRegression)},
-    ) -> None:
+    name: str = "training_workflow",
+    package_path: str = "src",
+    import_path: str = "flytezen.workflows.lrwine",
+    config_class: str = "Hyperparameters",
+    project: str = "flytesnacks",
+    domain: str = "development",
+    mode: str = "dev",
+    image: str = "ghcr.io/sciexp/flytezen",
+    tag: str = "main",
+    wait: bool = True,
+    version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower(),
+    inputs: Dict[str, Any] = {"hyperparameters": builds(LogisticRegression)},
+) -> None:
     """
     Executes the given workflow based on the Hydra configuration, supporting two modes
     of execution controlled by 'mode':
@@ -109,7 +92,21 @@ def execute_workflow(
     for workflow completion based on the `wait` flag in the workflow configuration.
 
     Args:
-        workflow: Hydra configuration object for the workflow execution.
+        name (str): The name of the workflow function to execute.
+        package_path (str): The path to the workflow package.
+        import_path (str): The import path of the workflow function to execute.
+        config_class (str): The name of the configuration class containing hyperparameters.
+        project (str): The Flyte project in which to register or execute the workflow.
+        domain (str): The Flyte domain in which to register or execute the workflow.
+        mode (str): Mode of workflow registration - 'dev' for fast registration and
+                    'prod' for manual registration.
+        image (str): The container image FQN to use for executing the workflow.
+        tag (str): The tag to append to the container image FQN to use for executing the workflow.
+        wait (bool): Flag indicating whether to wait for the workflow execution to complete or run async.
+        version (str): The version of the workflow, including a git commit hash or other identifier(s).
+        hyperparameters (Any): An instance of the configuration class defined by `config_class`, containing
+                               hyperparameters for the workflow. It is assumed this class is defined in the
+                               workflow module.
 
     Raises:
         Sets exit status one if 'mode' has an invalid value.
@@ -228,6 +225,44 @@ def main() -> None:
             {"callbacks": None},
             {"env": "default"},
         ],
+        help=HelpConf(
+            header=dedent(
+                """
+                ${hydra.help.app_name} is the CLI of a template designed to illustrate the integration of:
+
+                  * hydra-zen (https://mit-ll-responsible-ai.github.io/hydra-zen/),
+                  * hydra (https://hydra.cc/), and
+                  * omegaconf (https://omegaconf.readthedocs.io/),
+
+                which provide configuration management, with
+
+                  * flyte(kit) (https://flyte.org/),
+
+                which manages the registration and execution of Flyte workflows.
+                ${hydra.help.app_name} can be adapted as an auxiliary component of any python package,
+                enhancing its capabilities in managing complex workflow configuration
+                and execution.
+
+                Running `${hydra.help.app_name} -h` displays the current configuration of ${hydra.help.app_name}.
+                This reflects what will be executed if `flytezen` is run without arguments.
+
+                Use `${hydra.help.app_name} --cfg hydra` to view the associated hydra configuration.
+
+                """
+            ),
+            footer="Use `${hydra.help.app_name} --hydra-help` to view the hydra help.",
+            template=dedent(
+                """
+                ${hydra.help.header}
+                == Config ==
+                Override anything in the config (foo.bar=value)
+
+                $CONFIG
+                ${hydra.help.footer}
+                """
+            ),
+        ),
+        job=JobConf(name="flytezen"),
     )
     store(hydra_conf)
 
@@ -269,17 +304,18 @@ def main() -> None:
     #     hyperparameters=config_class(),
     # )
 
-    ExecutionConf = builds(execute_workflow,
+    ExecutionConf = builds(
+        execute_workflow,
         # name=os.environ.get("WORKFLOW_NAME"),
         # package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
         # import_path=workflow_import_path,
         # config_class=workflow_config_class_name,
         # project=os.environ.get("WORKFLOW_PROJECT"),
         # domain=os.environ.get("WORKFLOW_DOMAIN"),
-        # mode=workflow_registration_mode,
-        # version=workflow_version.lower(),
-        # image=os.environ.get("WORKFLOW_IMAGE"),
-        # tag=image_tag,
+        mode=workflow_registration_mode,
+        version=workflow_version.lower(),
+        image=os.environ.get("WORKFLOW_IMAGE"),
+        tag=image_tag,
         # wait=True,
         # hyperparameters=config_class(),
     )
@@ -319,14 +355,28 @@ if __name__ == "__main__":
       project: flytesnacks
       domain: development
       mode: dev
-      version: flytezen-main-16323b3
       image: ghcr.io/org/flytezen
       tag: main
       wait: true
-      hyperparameters:
-        _target_: flytezen.workflows.lrwine.Hyperparameters
-        C: 0.3
-        max_iter: 2500
+      version: flytezen-main-16323b3
+      inputs:
+        hyperparameters:
+          _target_: sklearn.linear_model._logistic.LogisticRegression
+          penalty: l2
+          dual: false
+          tol: 0.0001
+          C: 1.0
+          fit_intercept: true
+          intercept_scaling: 1
+          class_weight: null
+          random_state: null
+          solver: lbfgs
+          max_iter: 100
+          multi_class: auto
+          verbose: 0
+          warm_start: false
+          n_jobs: null
+          l1_ratio: null
 
     Example usage:
         > flytezen -h
