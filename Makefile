@@ -23,11 +23,11 @@ help_sort: ## Display alphabetized version of help.
 # flytezen
 #---------
 
-test: ## Run tests
-	poetry run pytest -rA
+test: ## Run tests. See pyproject.toml for configuration.
+	poetry run pytest
 
 test-cov-xml: ## Run tests with coverage
-	poetry run pytest -rA --cov-report=xml
+	poetry run pytest --cov-report=xml
 
 lint: ## Run linter
 	poetry run black .
