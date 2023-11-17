@@ -1,24 +1,29 @@
 import importlib
+import inspect
 import os
 import pathlib
-import secrets
 import sys
 import tempfile
-from textwrap import dedent
 from typing import Any, Dict
 
 import rich.syntax
 import rich.tree
 from dotenv import load_dotenv
 from flytekit.configuration import Config as FlyteConfig
-from flytekit.configuration import FastSerializationSettings, ImageConfig, SerializationSettings
+from flytekit.configuration import (
+    FastSerializationSettings,
+    ImageConfig,
+    SerializationSettings,
+)
 from flytekit.remote import FlyteRemote
-from hydra.conf import HelpConf, HydraConf, JobConf
 from hydra_zen import ZenStore, make_custom_builds_fn, to_yaml, zen
+from omegaconf import DictConfig
 
 from flytezen.cli.execution_utils import (
     check_required_env_vars,
+    generate_hydra_config,
     git_info_to_workflow_version,
+    random_alphanumeric_suffix,
     wait_for_workflow_completion,
 )
 from flytezen.logging import configure_logging
@@ -27,45 +32,19 @@ logger = configure_logging("execute")
 builds = make_custom_builds_fn(populate_full_signature=True)
 
 
-# @dataclass_json
-# @dataclass
-# class ExecutionConfigClass:
-#     """
-#     A dataclass representing configuration for a workflow execution.
-#     """
-
-#     name: str = "training_workflow"
-#     package_path: str = "src"
-#     import_path: str = "flytezen.workflows.lrwine"
-#     config_class: str = "Hyperparameters"
-#     project: str = "flytesnacks"
-#     domain: str = "development"
-#     mode: str = "dev"
-#     image: str = "ghcr.io/sciexp/flytezen"
-#     tag: str = "main"
-#     wait: bool = True
-#     version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower()
-#     hyperparameters: Dict[str, Any] = field(default_factory=lambda: {"hyperparameters": LogisticRegression()})
-
-
-# from flytezen.workflows.lrwine import Hyperparameters
-from flytezen.configuration import LogisticRegressionInterface
-
-
-# def execute_workflow(workflow: WorkflowConfigClass) -> None:
 def execute_workflow(
+    zen_cfg: DictConfig,
     name: str = "training_workflow",
     package_path: str = "src",
     import_path: str = "flytezen.workflows.lrwine",
-    config_class: str = "Hyperparameters",
     project: str = "flytesnacks",
     domain: str = "development",
     mode: str = "dev",
     image: str = "ghcr.io/sciexp/flytezen",
     tag: str = "main",
     wait: bool = True,
-    version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower(),
-    inputs: Dict[str, Any] = {"logistic_regression": builds(LogisticRegressionInterface)},
+    version: str = f"flytezen-main-{random_alphanumeric_suffix()}",
+    inputs: Dict[str, Any] = {},
 ) -> None:
     """
     Executes the given workflow based on the Hydra configuration, supporting two modes
@@ -92,11 +71,12 @@ def execute_workflow(
     logs various informational messages, including the execution URL, and optionally waits
     for workflow completion based on the `wait` flag in the workflow configuration.
 
+
+
     Args:
         name (str): The name of the workflow function to execute.
         package_path (str): The path to the workflow package.
         import_path (str): The import path of the workflow function to execute.
-        config_class (str): The name of the configuration class containing hyperparameters.
         project (str): The Flyte project in which to register or execute the workflow.
         domain (str): The Flyte domain in which to register or execute the workflow.
         mode (str): Mode of workflow registration - 'dev' for fast registration and
@@ -109,9 +89,18 @@ def execute_workflow(
         the names of the workflow function arguments and values are the specific input values
         overriding the defaults.
 
+        TODO: Dynamic configuration of `inputs` argument should be required, but it is placed
+        at the bottom due to the length in printing the config.
+        The parameters should be reorderd in hydra/to_yaml and this can then be moved
+        to the top of the arg list and made required.
+
     Raises:
         Sets exit status one if 'mode' has an invalid value.
     """
+    config_yaml = to_yaml(zen_cfg)
+    tree = rich.tree.Tree("workflow", style="dim", guide_style="dim")
+    tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
+    rich.print(tree)
 
     module = importlib.import_module(import_path)
     entity = getattr(module, name)
@@ -128,7 +117,9 @@ def execute_workflow(
             "Please use 'prod' mode for production or CI environments.\n\n"
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
-            logger.debug(f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n")
+            logger.debug(
+                f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
+            )
             _, upload_url = remote.fast_package(
                 pathlib.Path(package_path),
                 output=tmp_dir,
@@ -145,7 +136,9 @@ def execute_workflow(
         )
     elif mode == "prod":
         logger.info(f"Registering workflow:\n\n\t{import_path}\n")
-        serialization_settings = SerializationSettings(image_config=image_config)
+        serialization_settings = SerializationSettings(
+            image_config=image_config
+        )
     else:
         logger.error(
             f"Invalid workflow registration mode: {mode}. "
@@ -161,7 +154,6 @@ def execute_workflow(
     )
     execution = remote.execute(
         entity=entity,
-        # inputs={"hyperparameters": hyperparameters},
         inputs=inputs,
         version=version,
         execution_name_prefix=version,
@@ -172,6 +164,38 @@ def execute_workflow(
 
     if wait:
         wait_for_workflow_completion(execution, remote, logger)
+
+
+def generate_workflow_inputs(
+    workflow_import_path: str = "flytezen.workflows.lrwine",
+    workflow_name: str = "training_workflow",
+) -> Dict[str, Any]:
+    module = importlib.import_module(workflow_import_path)
+    workflow = getattr(module, workflow_name)
+
+    if not callable(workflow):
+        value_error_message = f"Workflow '{workflow_name}' is not callable"
+        raise ValueError(value_error_message)
+
+    inputs = {}
+
+    for name, param in inspect.signature(workflow).parameters.items():
+        param_type = param.annotation
+        default = param.default
+
+        # Check if the type is a built-in type (like int, str, etc.)
+        if isinstance(param_type, type) and param_type.__module__ == "builtins":
+            inputs[name] = default
+        else:
+            # Dynamically import the type if it's not a built-in type
+            type_module = importlib.import_module(param_type.__module__)
+            custom_type = getattr(type_module, param_type.__name__)
+
+            # CustomTypeConf = builds(custom_type)
+            # inputs[name] = CustomTypeConf()
+            inputs[name] = builds(custom_type)
+
+    return inputs
 
 
 def main() -> None:
@@ -199,7 +223,6 @@ def main() -> None:
             "WORKFLOW_NAME",
             "WORKFLOW_PACKAGE_PATH",
             "WORKFLOW_IMPORT_PATH",
-            "WORKFLOW_CONFIG_CLASS_NAME",
             "WORKFLOW_PROJECT",
             "WORKFLOW_DOMAIN",
             "WORKFLOW_REGISTRATION_MODE",
@@ -210,73 +233,14 @@ def main() -> None:
 
     store = ZenStore(name="flytezen", deferred_hydra_store=False)
 
-    hydra_conf = HydraConf(
-        defaults=[
-            {"output": "default"},
-            {"launcher": "basic"},  # joblib
-            {"sweeper": "basic"},
-            {"help": "default"},
-            {"hydra_help": "default"},
-            {"hydra_logging": "none"},  # default
-            {"job_logging": "none"},  # default
-            {"callbacks": None},
-            {"env": "default"},
-        ],
-        help=HelpConf(
-            header=dedent(
-                """
-                ${hydra.help.app_name} is the CLI of a template designed to illustrate the integration of:
-
-                  * hydra-zen (https://mit-ll-responsible-ai.github.io/hydra-zen/),
-                  * hydra (https://hydra.cc/), and
-                  * omegaconf (https://omegaconf.readthedocs.io/),
-
-                which provide configuration management, with
-
-                  * flyte(kit) (https://flyte.org/),
-
-                which manages the registration and execution of Flyte workflows.
-                ${hydra.help.app_name} can be adapted as an auxiliary component of any python package,
-                enhancing its capabilities in managing complex workflow configuration
-                and execution.
-
-                Running `${hydra.help.app_name} -h` displays the current configuration of ${hydra.help.app_name}.
-                This reflects what will be executed if `flytezen` is run without arguments.
-
-                Use `${hydra.help.app_name} --cfg hydra` to view the associated hydra configuration.
-
-                """
-            ),
-            footer="Use `${hydra.help.app_name} --hydra-help` to view the hydra help.",
-            template=dedent(
-                """
-                ${hydra.help.header}
-                == Config ==
-                Override anything in the config (foo.bar=value)
-
-                $CONFIG
-                ${hydra.help.footer}
-                """
-            ),
-        ),
-        job=JobConf(name="flytezen"),
-    )
-    store(hydra_conf)
+    store(generate_hydra_config())
 
     repo_name, git_branch, git_short_sha = git_info_to_workflow_version(logger)
-    workflow_import_path = os.environ.get("WORKFLOW_IMPORT_PATH")
-    module = importlib.import_module(workflow_import_path)
-    workflow = getattr(module, os.environ.get("WORKFLOW_NAME"))
-    # WorkflowConf = builds(workflow)
-
-    workflow_config_class_name = os.environ.get("WORKFLOW_CONFIG_CLASS_NAME")
-    # config_class = getattr(module, workflow_config_class_name)
 
     workflow_registration_mode = os.environ.get("WORKFLOW_REGISTRATION_MODE")
     if workflow_registration_mode == "dev":
         image_tag = git_branch
-        dev_random = "".join(secrets.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(3))
-        workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}-dev-{dev_random}"
+        workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}-dev-{random_alphanumeric_suffix()}"
     elif workflow_registration_mode == "prod":
         image_tag = git_short_sha
         workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}"
@@ -287,51 +251,53 @@ def main() -> None:
         )
         sys.exit(1)
 
-    # workflow_config = ExecutionConfigClass(
-    #     name=os.environ.get("WORKFLOW_NAME"),
-    #     package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
-    #     import_path=workflow_import_path,
-    #     config_class=workflow_config_class_name,
-    #     project=os.environ.get("WORKFLOW_PROJECT"),
-    #     domain=os.environ.get("WORKFLOW_DOMAIN"),
-    #     mode=workflow_registration_mode,
-    #     version=workflow_version.lower(),
-    #     image=os.environ.get("WORKFLOW_IMAGE"),
-    #     tag=image_tag,
-    #     wait=True,
-    #     hyperparameters=config_class(),
-    # )
+    workflow_import_path = os.environ.get("WORKFLOW_IMPORT_PATH")
+    workflow_name = os.environ.get("WORKFLOW_NAME")
 
+    # TODO: Build workflow inputs dynamically from workflow import path to allow
+    #       overrides from the hydra CLI.
+    #
+    # WorkflowConf = builds(generate_workflow_inputs)
+    #
+    # The separate dependency on the workflow import path and name
+    # here and in ExecutionConf prevents hydra CLI override of the workflow
+    workflow_inputs = generate_workflow_inputs(
+        workflow_import_path=workflow_import_path,
+        workflow_name=workflow_name,
+    )
+
+    # For parameters marked as `NOT overridable`,
+    # the value is determined by the env var
+    # and cannot be overriden by the hydra CLI.
+    # You can combine env vars and hydra CLI overrides
+    # > WORKFLOW_NAME=wf \
+    # > WORKFLOW_IMPORT_PATH=flytezen.workflows.example \
+    # > flytezen \
+    # > wait=false \
+    # > inputs.name=flyte
     ExecutionConf = builds(
         execute_workflow,
-        # name=os.environ.get("WORKFLOW_NAME"),
-        # package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"),
-        # import_path=workflow_import_path,
-        # config_class=workflow_config_class_name,
-        # project=os.environ.get("WORKFLOW_PROJECT"),
-        # domain=os.environ.get("WORKFLOW_DOMAIN"),
-        mode=workflow_registration_mode,
-        version=workflow_version.lower(),
-        image=os.environ.get("WORKFLOW_IMAGE"),
-        tag=image_tag,
-        # wait=True,
-        # hyperparameters=config_class(),
+        name=workflow_name,  # NOT overridable, determines inputs
+        import_path=workflow_import_path,  # NOT overridable, determines inputs
+        mode=workflow_registration_mode,  # NOT overridable, determines image tag
+        version=workflow_version.lower(),  # NOT overridable, depends on git branch and commit sha
+        image=os.environ.get(
+            "WORKFLOW_IMAGE"
+        ),  # Overridable, may be private information
+        tag=image_tag,  # NOT overridable, depends on git branch or commit sha
+        inputs=workflow_inputs,  # Overridable subcomponents, see `flytezen -h`
+        # package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"), # Overridable
+        # project=os.environ.get("WORKFLOW_PROJECT"), # Overridable
+        # domain=os.environ.get("WORKFLOW_DOMAIN"), # Overridable
+        # wait=True, # Overridable
     )
-    # store(
-    #     execute_workflow,
-    #     workflow=workflow_config,
-    # )
+
     store(
         ExecutionConf,
         name="execute_workflow",
     )
 
     store.add_to_hydra_store()
-
-    config_yaml = to_yaml(ExecutionConf)
-    tree = rich.tree.Tree("workflow", style="dim", guide_style="dim")
-    tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
-    rich.print(tree)
 
     zen(execute_workflow).hydra_main(
         config_name="execute_workflow",
@@ -349,56 +315,53 @@ if __name__ == "__main__":
     Override anything in the config (foo.bar=value)
 
     _target_: flytezen.cli.execute.execute_workflow
-    execution:
-      _target_: flytezen.cli.execute.ExecutionConfigClass
-      name: training_workflow
-      package_path: src
-      import_path: flytezen.workflows.lrwine
-      config_class: Hyperparameters
-      project: flytesnacks
-      domain: development
-      mode: dev
-      image: ghcr.io/org/flytezen
-      tag: main
-      wait: true
-      version: flytezen-main-16323b3
-      inputs:
-        hyperparameters:
-          _target_: sklearn.linear_model._logistic.LogisticRegression
-          penalty: l2
-          dual: false
-          tol: 0.0001
-          C: 1.0
-          fit_intercept: true
-          intercept_scaling: 1
-          class_weight: null
-          random_state: null
-          solver: lbfgs
-          max_iter: 100
-          multi_class: auto
-          verbose: 0
-          warm_start: false
-          n_jobs: null
-          l1_ratio: null
+    zen_cfg: ???
+    name: training_workflow
+    package_path: src
+    import_path: flytezen.workflows.lrwine
+    project: flytesnacks
+    domain: development
+    mode: dev
+    image: ghcr.io/org/flytezen
+    tag: main
+    wait: true
+    version: flytezen-main-16323b3-dev-a8x
+    inputs:
+      logistic_regression:
+        _target_: sklearn.linear_model._logistic.LogisticRegression
+        penalty: l2
+        dual: false
+        tol: 0.0001
+        C: 1.0
+        fit_intercept: true
+        intercept_scaling: 1
+        class_weight: null
+        random_state: null
+        solver: lbfgs
+        max_iter: 100
+        multi_class: auto
+        verbose: 0
+        warm_start: false
+        n_jobs: null
+        l1_ratio: null
 
     Example usage:
         > flytezen -h
         > flytezen \
-            execution.hyperparameters.C=0.4 \
-            execution.hyperparameters.max_iter=1200
+            inputs.logistic_regression.C=0.4 \
+            inputs.logistic_regression.max_iter=1200
         > flytezen \
-            --multirun execution.hyperparameters.C=0.2,0.5
+            --multirun inputs.logistic_regression.C=0.2,0.5
 
         See the the hydra config output in the git-ignored `./outputs` or
         `./multirun` directories. These are also stored as an artifact of
         the CI actions workflow in the `Upload config artifact` step.
 
     Warning:
-        Hydra command-line overrides are only supported for hyperparameters.
+        Hydra command-line overrides are only intended to be supported for inputs.
         Do not override workflow-level parameters. This will lead to unexpected behavior.
         You can modify workflow parameters with `.env` or environment variables.
-        Note  `execution.version` and `execution.tag` are determined
-        automatically in python based on `execution.mode`. The workflow parameters are
-        stored in the hydra config output for reference.
+        Note  `version` and `tag` are determined automatically in python based on `mode`.
+        The workflow execution parameters are stored in the hydra config output for reference.
     """
     main()
