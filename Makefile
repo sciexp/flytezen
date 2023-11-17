@@ -37,6 +37,9 @@ lint-check: ## Run linter in check mode
 	poetry run black --check .
 	poetry run ruff .
 
+typecheck: ## Run typechecker
+	poetry run pyright
+
 #---------------
 # workflow setup
 #---------------
