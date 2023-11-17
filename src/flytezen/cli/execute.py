@@ -274,7 +274,8 @@ def main() -> None:
     workflow_registration_mode = os.environ.get("WORKFLOW_REGISTRATION_MODE")
     if workflow_registration_mode == "dev":
         image_tag = git_branch
-        workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}-dev-{secrets.token_urlsafe(2)}"
+        dev_random = "".join(secrets.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(3))
+        workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}-dev-{dev_random}"
     elif workflow_registration_mode == "prod":
         image_tag = git_short_sha
         workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}"
