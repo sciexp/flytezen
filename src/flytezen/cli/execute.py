@@ -30,25 +30,25 @@ logger = configure_logging("execute")
 builds = make_custom_builds_fn(populate_full_signature=True)
 
 
-@dataclass_json
-@dataclass
-class ExecutionConfigClass:
-    """
-    A dataclass representing configuration for a workflow execution.
-    """
+# @dataclass_json
+# @dataclass
+# class ExecutionConfigClass:
+#     """
+#     A dataclass representing configuration for a workflow execution.
+#     """
 
-    name: str = "training_workflow"
-    package_path: str = "src"
-    import_path: str = "flytezen.workflows.lrwine"
-    config_class: str = "Hyperparameters"
-    project: str = "flytesnacks"
-    domain: str = "development"
-    mode: str = "dev"
-    image: str = "ghcr.io/sciexp/flytezen"
-    tag: str = "main"
-    wait: bool = True
-    version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower()
-    hyperparameters: Dict[str, Any] = field(default_factory=lambda: {"hyperparameters": LogisticRegression()})
+#     name: str = "training_workflow"
+#     package_path: str = "src"
+#     import_path: str = "flytezen.workflows.lrwine"
+#     config_class: str = "Hyperparameters"
+#     project: str = "flytesnacks"
+#     domain: str = "development"
+#     mode: str = "dev"
+#     image: str = "ghcr.io/sciexp/flytezen"
+#     tag: str = "main"
+#     wait: bool = True
+#     version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower()
+#     hyperparameters: Dict[str, Any] = field(default_factory=lambda: {"hyperparameters": LogisticRegression()})
 
 
 # def execute_workflow(workflow: WorkflowConfigClass) -> None:
@@ -64,7 +64,7 @@ def execute_workflow(
     tag: str = "main",
     wait: bool = True,
     version: str = f"flytezen-main-{secrets.token_urlsafe(4)}".lower(),
-    inputs: Dict[str, Any] = {"hyperparameters": builds(LogisticRegression)},
+    inputs: Dict[str, Any] = {"logistic_regression": builds(LogisticRegression)},
 ) -> None:
     """
     Executes the given workflow based on the Hydra configuration, supporting two modes
@@ -104,17 +104,13 @@ def execute_workflow(
         tag (str): The tag to append to the container image FQN to use for executing the workflow.
         wait (bool): Flag indicating whether to wait for the workflow execution to complete or run async.
         version (str): The version of the workflow, including a git commit hash or other identifier(s).
-        hyperparameters (Any): An instance of the configuration class defined by `config_class`, containing
-                               hyperparameters for the workflow. It is assumed this class is defined in the
-                               workflow module.
+        inputs (Dict[str, Any]): The inputs to the workflow function to execute. Keys are strings of
+        the names of the workflow function arguments and values are the specific input values
+        overriding the defaults.
 
     Raises:
         Sets exit status one if 'mode' has an invalid value.
     """
-    config_yaml = to_yaml(execution)
-    tree = rich.tree.Tree("WORKFLOW", style="dim", guide_style="dim")
-    tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
-    rich.print(tree)
 
     module = importlib.import_module(import_path)
     entity = getattr(module, name)
@@ -330,6 +326,11 @@ def main() -> None:
 
     store.add_to_hydra_store()
 
+    config_yaml = to_yaml(ExecutionConf)
+    tree = rich.tree.Tree("workflow", style="dim", guide_style="dim")
+    tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
+    rich.print(tree)
+
     zen(execute_workflow).hydra_main(
         config_name="execute_workflow",
         version_base="1.3",
@@ -386,9 +387,9 @@ if __name__ == "__main__":
         > flytezen \
             --multirun execution.hyperparameters.C=0.2,0.5
 
-        See the git-ignored `./outputs` or `./multirun` directories for the hydra
-        config output. These are also stored as an artifact of the CI actions workflow
-        in the `Upload config artifact` step.
+        See the the hydra config output in the git-ignored `./outputs` or
+        `./multirun` directories. These are also stored as an artifact of
+        the CI actions workflow in the `Upload config artifact` step.
 
     Warning:
         Hydra command-line overrides are only supported for hyperparameters.
