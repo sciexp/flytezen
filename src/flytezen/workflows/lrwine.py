@@ -1,15 +1,17 @@
 from dataclasses import asdict, dataclass
+from pprint import pformat
 from typing import Any, Dict, Optional, Type
 
 import pandas as pd
 from dataclasses_json import dataclass_json
 from flytekit import task, workflow
 from sklearn.datasets import load_wine
-
-# from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.linear_model import LogisticRegression
 
 from flytezen.configuration import create_dataclass_from_callable
+from flytezen.logging import configure_logging
+
+logger = configure_logging("lrwine")
 
 logistic_regression_custom_types: Dict[str, Type[Optional[Any]]] = {
     "penalty": Optional[str],
@@ -26,18 +28,6 @@ LogisticRegressionInterface = dataclass_json(
         )
     )
 )
-
-# linear_regression_custom_types: Dict[str, Type[Optional[Any]]] = {
-#     "n_jobs": Optional[int],
-# }
-
-# LinearRegressionInterface = dataclass_json(
-#     dataclass(
-#         create_dataclass_from_callable(
-#             LinearRegression, linear_regression_custom_types
-#         )
-#     )
-# )
 
 
 @task
@@ -62,15 +52,18 @@ def train_model(
     """Train a model on the wine dataset."""
     features = data.drop("target", axis="columns")
     target = data["target"]
-    return LogisticRegression(**asdict(logistic_regression)).fit(
-        features, target
+    logger.info(f"{pformat(logistic_regression)}\n\n")
+    LogisticRegressionInstance = LogisticRegression(
+        **asdict(logistic_regression)
     )
+    return LogisticRegressionInstance.fit(features, target)
 
 
 @workflow
 def training_workflow(
-    logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(),
-    # linear_regression: LinearRegressionInterface = LinearRegressionInterface(),
+    logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(
+        max_iter=2000
+    ),
 ) -> LogisticRegression:
     """Put all of the steps together into a single workflow."""
     data = get_data()
@@ -79,3 +72,36 @@ def training_workflow(
         data=processed_data,
         logistic_regression=logistic_regression,
     )
+
+
+# The following can be used to test dynamic dataclass construction
+# in the case where there are multiple inputs of distinct types,
+# by commenting @workflow above and uncommenting the following:
+#
+# from sklearn.linear_model import LinearRegression, LogisticRegression
+
+# linear_regression_custom_types: Dict[str, Type[Optional[Any]]] = {
+#     "n_jobs": Optional[int],
+# }
+
+# LinearRegressionInterface = dataclass_json(
+#     dataclass(
+#         create_dataclass_from_callable(
+#             LinearRegression, linear_regression_custom_types
+#         )
+#     )
+# )
+# @workflow
+# def training_workflow(
+#     logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(
+#         max_iter=2000
+#     ),
+#     linear_regression: LinearRegressionInterface = LinearRegressionInterface(),
+# ) -> LogisticRegression:
+#     """Put all of the steps together into a single workflow."""
+#     data = get_data()
+#     processed_data = process_data(data=data)
+#     return train_model(
+#         data=processed_data,
+#         logistic_regression=logistic_regression,
+#     )
