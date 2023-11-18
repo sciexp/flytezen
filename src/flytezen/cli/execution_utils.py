@@ -91,6 +91,12 @@ def generate_hydra_config() -> HydraConf:
         help=HelpConf(
             header=dedent(
                 """
+                This is the ${hydra.help.app_name} help accessible via `${hydra.help.app_name} -h`.
+
+                Use `${hydra.help.app_name} -c job` to view the ${hydra.help.app_name} configuration alone.
+                See the end of this help page for instructions on how to install shell tab completion for
+                configuration overrides.
+
                 ${hydra.help.app_name} is the CLI of a template designed to illustrate the integration of:
 
                   * hydra-zen (https://mit-ll-responsible-ai.github.io/hydra-zen/),
@@ -106,26 +112,38 @@ def generate_hydra_config() -> HydraConf:
                 enhancing its capabilities in managing complex workflow configuration
                 and execution.
 
-                Running `${hydra.help.app_name} -h` displays the current configuration of ${hydra.help.app_name}.
+                Running `${hydra.help.app_name} -c job` displays the current configuration of ${hydra.help.app_name}.
                 This reflects what will be executed if `flytezen` is run without arguments.
 
-                Use `${hydra.help.app_name} --cfg hydra` to view the associated hydra configuration.
+                Use `${hydra.help.app_name} -c hydra` to view the associated hydra configuration.
 
                 """
             ),
             footer=dedent(
                 """
-                You can test CLI configuration overrides after the help flag, e.g.:
+                You can test CLI configuration overrides after `-c job`, e.g.:
 
-                  * `${hydra.help.app_name} -h mode=prod`
-                  * `${hydra.help.app_name} -h name=wf import_path=${hydra.help.app_name}.workflows.example`
+                  * `${hydra.help.app_name} -c job mode=prod`
+                  * `${hydra.help.app_name} -c job name=wf import_path=${hydra.help.app_name}.workflows.example`
                   # This example will fail if you set a workflow with different inputs.
-                  * `${hydra.help.app_name} -h inputs.logistic_regression.penalty=l1`
+                  * `${hydra.help.app_name} -c job inputs.logistic_regression.penalty=l1`
 
                 This will generate `== Config ==` above resolved in context of the command line overrides.
-                Removing the help flag will execute the workflow with the specified configuration.
+                Removing the `-c job` flag will execute the workflow with the specified configuration.
                 The resolved configuration will be stored in the `outputs` or `multirun` directories.
-                Use `${hydra.help.app_name} --hydra-help` to view the hydra help."""
+
+                Use `${hydra.help.app_name} --hydra-help` to view the hydra help.
+                This contains, for example, the commands to install shell tab completion.
+                For example in bash or zsh, if the active configuration has path `inputs.logistic_regression`
+                representing the parameters of a sklearn.linear_model.LogisticRegression instance:
+
+                > eval "$$(flytezen -sc install=bash)"
+                > flytezen inputs.logistic_regression. [TAB]
+                inputs.logistic_regression.C=                  inputs.logistic_regression.fit_intercept=
+                inputs.logistic_regression._target_=           inputs.logistic_regression.intercept_scaling=
+                inputs.logistic_regression.class_weight.       inputs.logistic_regression.l1_ratio=
+                inputs.logistic_regression.dual=               inputs.logistic_regression.max_iter=
+                ..."""
             ),
             template=dedent(
                 """
