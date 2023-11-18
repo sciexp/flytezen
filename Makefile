@@ -40,6 +40,21 @@ lint-check: ## Run linter in check mode
 typecheck: ## Run typechecker
 	poetry run pyright
 
+#------------------
+# local dev cluster
+#------------------
+
+local_image: ## Build local image.
+	@echo "building image: $(WORKFLOW_IMAGE):$(GIT_BRANCH)"
+	@echo
+	docker images -a $(WORKFLOW_IMAGE)
+	@echo
+	docker build -t $(WORKFLOW_IMAGE):$(GIT_BRANCH) -f $(ACTIVE_DOCKERFILE) .
+	@echo
+	docker push $(WORKFLOW_IMAGE):$(GIT_BRANCH)
+	@echo
+	docker images -a $(WORKFLOW_IMAGE)
+
 #---------------
 # workflow setup
 #---------------
