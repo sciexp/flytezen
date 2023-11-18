@@ -50,6 +50,8 @@ def execute_workflow(
     Executes the given workflow based on the Hydra configuration, supporting two modes
     of execution controlled by 'mode':
 
+    - 'local': Attempts to execute the workflow locally without registering it on the remote.
+
     - 'dev': Executes a copy of the local workflow on the remote for development purposes.
       This mode allows for testing changes to the workflow code remotely without needing
       to rebuild and push the container image. If there is a significant change in dependencies,
@@ -104,6 +106,13 @@ def execute_workflow(
 
     module = importlib.import_module(import_path)
     entity = getattr(module, name)
+
+    # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
+    if mode == "local":
+        output = entity(**inputs)
+        logger.info(f"Workflow output:\n\n{output}\n")
+        return
+
     remote = FlyteRemote(
         config=FlyteConfig.auto(),
         default_project=project,
