@@ -4,36 +4,65 @@ A template for hydra-zen configuration of Flyte workflow execution.
 
 ## Directory tree
 
+<details>
+
+<summary>tree</summary>
+
 ```tree
-flyte-zen/
-  src/
-    flytezen/               # Core package code
-      __init__.py
-      common/               # Common utilities and shared code
-        __init__.py
-         ...
-        ...
+.
+├── .argo
+│   └── build.yaml
+├── .flyte
+│   ├── config-local.yaml
+│   ├── config-template.yaml
+│   └── config.yaml
+├── .github
+│   ├── actions
+│   │   ├── setup_environment
+│   │   │   └── action.yml
+│   │   └── tag-build-push-container
+│   ├── workflows
+│   │   ├── CI.yaml
+│   │   └── build-images.yaml
+│   └── .gitkeep
+├── containers
+│   ├── Dockerfile
+│   └── pkg.Dockerfile
+├── src
+│   ├── flytezen
+│   │   ├── cli
+│   │   │   ├── __init__.py
+│   │   │   ├── execute.py
+│   │   │   └── execution_utils.py
+│   │   ├── workflows
+│   │   │   ├── __init__.py
+│   │   │   ├── example.py
+│   │   │   └── lrwine.py
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   ├── configuration.py
+│   │   └── logging.py
+│   └── .gitkeep
+├── tests
+│   ├── __init__.py
+│   ├── conftest.py
+│   └── test_cli.py
+├── .coverage
+├── .dockerignore
+├── .env
+├── .envrc
+├── .example.env
+├── .gitignore
+├── LICENSE
+├── Makefile
+├── README.md
+├── poetry.lock
+└── pyproject.toml
 
-      cli/                   # CLI-related code
-        __init__.py
-        main.py              # Entry point for the CLI
-        execute.py           # Workflow execution script, adapted for CLI
-        execution_utils.py   # Utility functions for execution
-
-      workflows/             # Workflow definitions
-        __init__.py
-        example.py
-        lrwine.py
-        ...
-
-  tests/                    # Unit tests
-    ...
-  .env                      # Environment variables
-  .gitignore
-  LICENSE
-  README.md
-  pyproject.toml            # Project metadata and dependencies
+14 directories, 35 files
 ```
+
+</details>
 
 ## flyte-template
 
