@@ -108,6 +108,7 @@ start_sandbox() {
     # see Dockerfile for more details
     # https://github.com/flyteorg/flyte/blob/master/docker/sandbox-bundled/Dockerfile
     # master@712ee8edd60d9b9494a392da7a7b1726bfb24896
+    # see flytectl demo start --dryRun for commands
     FLYTE_SANDBOX_IMAGE="cr.flyte.org/flyteorg/flyte-sandbox-bundled:latest"
     $CONTAINER_CMD container rm flyte-sandbox --force
     $CONTAINER_CMD volume create flyte-sandbox
