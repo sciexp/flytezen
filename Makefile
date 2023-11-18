@@ -273,6 +273,9 @@ update_config: ## Update flytectl config file from template.
 		.storage.container = strenv(GCP_STORAGE_CONTAINER)' \
 		.flyte/config-template.yaml > .flyte/config.yaml
 
+tree: ## Print directory tree.
+	tree -a --dirsfirst -L 4 -I ".git|.direnv|*pycache*|*ruff_cache*|*pytest_cache*|outputs|multirun|.vscode|conf|scripts"
+
 approve_prs: ## Approve github pull requests from bots: PR_ENTRIES="2-5 10 12-18"
 	for entry in $(PR_ENTRIES); do \
 		if [[ "$$entry" == *-* ]]; then \
