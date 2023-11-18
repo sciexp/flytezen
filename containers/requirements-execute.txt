@@ -1,6 +1,0 @@
-python-dotenv
-hydra-zen
-hydra-joblib-launcher
-rich
-dataclasses-json
-fsspec<2023.10.0
