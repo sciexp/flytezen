@@ -92,7 +92,6 @@ python-dotenv = "1.0.0"
 hydra-zen = ">=0.11.0"
 hydra-joblib-launcher = ">=1.2.0"
 rich = "13.6.0"
-rich-click = ">=1.7.0"
 dataclasses-json = ">=0.5.9"
 fsspec = "<2023.10.0"
 
@@ -112,7 +111,59 @@ pytest-cov = { version = ">=4.1.0", optional = true }
 ruff = { version = ">=0.1.0", optional = true }
 xdoctest = { version = ">=1.1.1", optional = true }
 
+[tool.poetry.group.lint]
+optional = true
+
+[tool.poetry.group.lint.dependencies]
+black = { version = ">=23.10.0", extras = ["jupyter"] }
+mypy = ">=1.6.1"
+pyright = ">=1.1.336"
+ruff = ">=0.1.0"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=7.4.2"
+pytest-asyncio = ">=0.21.1"
+pytest-cov = ">=4.1.0"
+xdoctest = ">=1.1.1"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+jupytext = ">=1.15.2"
+jupyter_contrib_nbextensions = ">=0.7.0"
+mkdocs-jupyter = ">=0.24.6"
+mkdocs-material = ">=9.4.6"
+mkdocstrings = { version = ">=0.23.0", extras = ["python"] }
+notebook = "==6.4.13"
+
 [tool.poetry.extras]
+docs = [
+  "jupytext",
+  "jupyter_contrib_nbextensions",
+  "mkdocs-jupyter",
+  "mkdocs-material",
+  "mkdocstrings",
+  "notebook",
+ ]
+
+lint = [
+  "black",
+  "mypy",
+  "pyright",
+  "ruff",
+ ]
+
+test = [
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "xdoctest",
+ ]
+
 dev = [
   "black",
   "jupytext",
