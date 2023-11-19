@@ -57,6 +57,8 @@ jobs:
     - name: build
       run: |
         echo "commit sha $GITHUB_SHA"
+        GITHUB_REF="refs/heads/$GITHUB_REF_NAME"
+        echo "GITHUB_REF: $GITHUB_REF"
         argo version --short
         argo submit .argo/build.yaml \
           --generate-name="${GITHUB_REPOSITORY_NAME_PART}-build-${GITHUB_SHA_SHORT}-" \
