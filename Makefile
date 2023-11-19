@@ -19,6 +19,42 @@ help: ## Display this help. (Default)
 help_sort: ## Display alphabetized version of help.
 	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+#---------
+# flytezen
+#---------
+
+test: ## Run tests. See pyproject.toml for configuration.
+	poetry run pytest
+
+test-cov-xml: ## Run tests with coverage
+	poetry run pytest --cov-report=xml
+
+lint: ## Run linter
+	poetry run black .
+	poetry run ruff --fix .
+
+lint-check: ## Run linter in check mode
+	poetry run black --check .
+	poetry run ruff .
+
+typecheck: ## Run typechecker
+	poetry run pyright
+
+#------------------
+# local dev cluster
+#------------------
+
+local_image: ## Build local image.
+	@echo "building image: $(WORKFLOW_IMAGE):$(GIT_BRANCH)"
+	@echo
+	docker images -a $(WORKFLOW_IMAGE)
+	@echo
+	docker build -t $(WORKFLOW_IMAGE):$(GIT_BRANCH) -f $(ACTIVE_DOCKERFILE) .
+	@echo
+	docker push $(WORKFLOW_IMAGE):$(GIT_BRANCH)
+	@echo
+	docker images -a $(WORKFLOW_IMAGE)
+
 #---------------
 # workflow setup
 #---------------
@@ -115,17 +151,17 @@ package_and_register: package_workflows register_workflows
 #-------------------
 
 run_help: ## Print hydra help for execute script.
-	python execute.py --help
+	poetry run flytezen --help
 
 .PHONY: run
 run: ## Run registered workflow (sync).
-	python execute.py
+	poetry run flytezen
 
 multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
-	python execute.py --multirun workflow.hyperparameters.C=0.2,0.5
+	poetry run flytezen --multirun workflow.hyperparameters.C=0.2,0.5
 
 run_async: ## Run registered workflow (async).
-	python execute.py workflow.wait=False
+	poetry run flytezen workflow.wait=False
 
 run_unregistered: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
@@ -149,17 +185,19 @@ run_local: ## Dispatch unregistered run from flytekit cli
 browse: ## Open github repo in browser at HEAD commit.
 	gh browse $(GIT_SHORT_SHA)
 
-workflow_ci: ## Open CI workflow summary.
+GH_ACTIONS_DEBUG ?= false
+
+ci: ## Run CI (GH_ACTIONS_DEBUG default is false).
+	gh workflow run "CI" --ref $(GIT_BRANCH) -f debug_enabled=$(GH_ACTIONS_DEBUG)
+
+build_images: ## Run Build Images (GH_ACTIONS_DEBUG default is false).
+	gh workflow run "Build Images" --ref $(GIT_BRANCH) -f debug_enabled=$(GH_ACTIONS_DEBUG)
+
+ci_view_workflow: ## Open CI workflow summary.
 	gh workflow view "CI"
 
-ci: ## Run CI with debug enabled.
-	gh workflow run "CI" --ref main -f debug_enabled=true
-
-workflow_build: ## Open Build workflow summary.
-	gh workflow view "Build"
-
-build: ## Build docker image.
-	gh workflow run "Build" --ref main -f debug_enabled=true
+build_images_view_workflow: ## Open Build Images workflow summary.
+	gh workflow view "Build Images"
 
 docker_login: ## Login to ghcr docker registry. Check regcreds in $HOME/.docker/config.json.
 	docker login ghcr.io -u $(GH_ORG) -p $(GITHUB_TOKEN)
@@ -216,7 +254,10 @@ env_print: ## Print a subset of environment variables defined in ".env" file.
 
 # gh secret set GOOGLE_APPLICATION_CREDENTIALS_DATA --repo="$(GH_REPO)" --body='$(shell cat $(GCP_GACD_PATH))'
 ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
-	gh secret list --repo=$(GH_REPO)
+	@echo "secrets before updates:"
+	@echo
+	PAGER=cat gh secret list --repo=$(GH_REPO)
+	@echo
 	gh secret set FLYTE_CLUSTER_ENDPOINT --repo="$(GH_REPO)" --body="$(FLYTE_CLUSTER_ENDPOINT)"
 	gh secret set FLYTE_OAUTH_CLIENT_SECRET --repo="$(GH_REPO)" --body="$(FLYTE_OAUTH_CLIENT_SECRET)"
 	gh secret set FLYTECTL_CONFIG --repo="$(GH_REPO)" --body="$(FLYTECTL_CONFIG)"
@@ -224,29 +265,38 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	gh secret set GCP_STORAGE_SCOPES --repo="$(GH_REPO)" --body="$(GCP_STORAGE_SCOPES)"
 	gh secret set GCP_STORAGE_CONTAINER --repo="$(GH_REPO)" --body="$(GCP_STORAGE_CONTAINER)"
 	gh secret set GCP_ARTIFACT_REGISTRY_PATH --repo="$(GH_REPO)" --body="$(GCP_ARTIFACT_REGISTRY_PATH)"
-	gh secret set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
-	gh secret set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
-	gh secret set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
-	gh secret set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
-	gh secret list --repo=$(GH_REPO)
+	@echo
+	@echo secrets after updates:
+	@echo
+	PAGER=cat gh secret list --repo=$(GH_REPO)
 
 ghvars: ## Update github secrets for GH_REPO from ".env" file.
-	gh variable list --repo=$(GH_REPO)
+	@echo "variables before updates:"
+	@echo
+	PAGER=cat gh variable list --repo=$(GH_REPO)
+	@echo
 	gh variable set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
 	gh variable set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
+	gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
+	gh variable set WORKFLOW_PACKAGE_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_PACKAGE_PATH)"
 	gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
 	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
-	gh variable set WORKFLOW_CONFIG_CLASS_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_CONFIG_CLASS_NAME)"
 	gh variable set WORKFLOW_REGISTRATION_MODE --repo="$(GH_REPO)" --body="prod"
-	gh variable list --repo=$(GH_REPO)
+	@echo
+	@echo variables after updates:
+	@echo
+	PAGER=cat gh variable list --repo=$(GH_REPO)
 
 update_config: ## Update flytectl config file from template.
-	yq ea \
+	yq e \
 		'.admin.endpoint = strenv(FLYTE_CLUSTER_ENDPOINT) | \
 		.storage.stow.config.project_id = strenv(GCP_PROJECT_ID) | \
 		.storage.stow.config.scopes = strenv(GCP_STORAGE_SCOPES) | \
 		.storage.container = strenv(GCP_STORAGE_CONTAINER)' \
-		config-template.yaml > config.yaml
+		.flyte/config-template.yaml > .flyte/config.yaml
+
+tree: ## Print directory tree.
+	tree -a --dirsfirst -L 4 -I ".git|.direnv|*pycache*|*ruff_cache*|*pytest_cache*|outputs|multirun|.vscode|conf|scripts"
 
 approve_prs: ## Approve github pull requests from bots: PR_ENTRIES="2-5 10 12-18"
 	for entry in $(PR_ENTRIES); do \

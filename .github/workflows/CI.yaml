@@ -42,6 +42,20 @@ jobs:
       with:
         skip_after_successful_duplicate: 'true'
 
+  set-debug:
+    name: set-debug-flag
+    runs-on: ubuntu-latest
+    outputs:
+      debug: ${{ steps.set-debug.outputs.debug }}
+    steps:
+    - id: set-debug
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" || "${{ github.event_name }}" == "workflow_call" ]]; then
+          echo "DEBUG=${{ github.event.inputs.debug_enabled }}" >> $GITHUB_ENV
+        else
+          echo "DEBUG=false" >> $GITHUB_ENV
+        fi
+
   config:
     needs: skip-duplicate-runs
     if: ${{ needs.skip-duplicate-runs.outputs.should_skip != 'true' }}
@@ -61,7 +75,7 @@ jobs:
               .storage.stow.config.project_id = strenv(GCP_PROJECT_ID) | \
               .storage.stow.config.scopes = strenv(GCP_STORAGE_SCOPES) | \
               .storage.container = strenv(GCP_STORAGE_CONTAINER)' \
-              config-template.yaml > config.yaml"
+              .flyte/config-template.yaml > .flyte/config.yaml"
       env:
         FLYTE_CLUSTER_ENDPOINT: ${{ secrets.FLYTE_CLUSTER_ENDPOINT }}
         GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -86,13 +100,17 @@ jobs:
 
 
   execute-workflow:
-    needs: [config, build-images]
+    needs: [config, build-images, set-debug]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ['3.10']
     env:
         FLYTECTL_CONFIG: ${{ secrets.FLYTECTL_CONFIG }}
         FLYTE_OAUTH_CLIENT_SECRET: ${{ secrets.FLYTE_OAUTH_CLIENT_SECRET }}
+        WORKFLOW_PACKAGE_PATH: ${{ vars.WORKFLOW_PACKAGE_PATH }}
         WORKFLOW_IMPORT_PATH: ${{ vars.WORKFLOW_IMPORT_PATH }}
-        WORKFLOW_CONFIG_CLASS_NAME: ${{ vars.WORKFLOW_CONFIG_CLASS_NAME }}
+        WORKFLOW_NAME: ${{ vars.WORKFLOW_NAME }}
         WORKFLOW_PROJECT: ${{ vars.WORKFLOW_PROJECT }}
         WORKFLOW_DOMAIN: ${{ vars.WORKFLOW_DOMAIN }}
         WORKFLOW_REGISTRATION_MODE: ${{ vars.WORKFLOW_REGISTRATION_MODE }}
@@ -110,25 +128,17 @@ jobs:
         # https://github.com/flyteorg/flytectl/releases
         version: '0.8.0'
   
-    - name: Set up Python
-      id: setup-python
-      uses: actions/setup-python@v4
+    - name: Setup environment
+      uses: ./.github/actions/setup_environment
       with:
-        python-version: "3.10"
-        cache: 'pip'
-
-    - name: Install execution dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt -r requirements-execute.txt
-        pip freeze
-        pip list
+        python_version: ${{ matrix.python_version }}
+        debug_enabled: ${{ needs.set-debug.outputs.debug }}
 
     - name: Download Flyte config
       uses: actions/download-artifact@v3
       with:
         name: flyte-config
-        path: .
+        path: .flyte/
 
     - name: Setup tmate debug session
       if: ${{ github.event.inputs.debug_enabled == 'true' }}
