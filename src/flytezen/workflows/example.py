@@ -1,4 +1,6 @@
-"""A simple Flyte example."""
+"""
+A simple Flyte example.
+"""
 
 import typing
 
@@ -7,7 +9,8 @@ from flytekit import task, workflow
 
 @task
 def say_hello(name: str) -> str:
-    """A simple Flyte task to say "hello".
+    """
+    A simple Flyte task to say "hello".
 
     The @task decorator allows Flyte to use this function as a Flyte task, which
     is executed as an isolated, containerized unit of compute.
@@ -17,13 +20,16 @@ def say_hello(name: str) -> str:
 
 @task
 def greeting_length(greeting: str) -> int:
-    """A task the counts the length of a greeting."""
+    """
+    A task the counts the length of a greeting.
+    """
     return len(greeting)
 
 
 @workflow
 def wf(name: str = "union") -> typing.Tuple[str, int]:
-    """Declare workflow called `wf`.
+    """
+    Declare workflow called `wf`.
 
     The @workflow decorator defines an execution graph that is composed of tasks
     and potentially sub-workflows. In this simple example, the workflow is
