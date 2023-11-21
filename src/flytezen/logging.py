@@ -8,7 +8,9 @@ from rich.theme import Theme
 
 def configure_logging(logger_name: str = "flytezen") -> logging.Logger:
     """
-    Configures logging with rich handler and checks for valid log level from environment.
+    Configures logging with rich handler and checks for valid log level from
+    environment.
+
     Defaults to `INFO` if no valid log level is found.
     """
     console_theme = Theme(
