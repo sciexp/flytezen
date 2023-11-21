@@ -1,4 +1,6 @@
-"""flytezen."""
+"""
+flytezen.
+"""
 
 from importlib import metadata
 
