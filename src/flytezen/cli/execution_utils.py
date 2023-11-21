@@ -144,7 +144,7 @@ def generate_hydra_config() -> HydraConf:
                 representing the parameters of a sklearn.linear_model.LogisticRegression instance:
 
                 > eval "$$(flytezen -sc install=bash)"
-                > flytezen inputs.logistic_regression. [TAB]
+                > flytezen inputs.logistic_regression.[TAB]
                 inputs.logistic_regression.C=                  inputs.logistic_regression.fit_intercept=
                 inputs.logistic_regression._target_=           inputs.logistic_regression.intercept_scaling=
                 inputs.logistic_regression.class_weight.       inputs.logistic_regression.l1_ratio=
@@ -154,8 +154,14 @@ def generate_hydra_config() -> HydraConf:
             template=dedent(
                 """
                 ${hydra.help.header}
+                == Configuration groups ==
+                First override default group values (group=option)
+
+                $APP_CONFIG_GROUPS
+
                 == Config ==
-                Override anything in the config (foo.bar=value)
+                Then override any element in the config (foo.bar=value)
+                that is not set exclusively by an environment variable [see doc(strings)]
 
                 $CONFIG
                 ${hydra.help.footer}
