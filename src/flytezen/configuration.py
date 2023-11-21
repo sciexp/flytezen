@@ -12,7 +12,8 @@ def infer_type_from_default(
     default: Any, name: str, custom_types: Optional[Dict[str, Type]] = None
 ) -> Type:
     """
-    Infers the type from the default value of a parameter. Supports basic types like bool, int, float, str, list, and dict.
+    Infers the type from the default value of a parameter. Supports basic types
+    like bool, int, float, str, list, and dict.
 
     Args:
         default: The default value of a parameter.
@@ -82,10 +83,10 @@ def create_dataclass_from_callable(
     callable_obj: Callable, custom_types: Optional[Dict[str, Type]] = None
 ) -> Type:
     """
-    Creates a dataclass from a callable object (such as a function or class constructor).
-    This dataclass includes all parameters of the callable as fields, with types inferred or
-    directly taken from type hints. Fields are assigned default values based on the callable's
-    signature.
+    Creates a dataclass from a callable object (such as a function or class
+    constructor). This dataclass includes all parameters of the callable as
+    fields, with types inferred or directly taken from type hints. Fields are
+    assigned default values based on the callable's signature.
 
     Args:
         callable_obj: The callable object from which to create a dataclass.
