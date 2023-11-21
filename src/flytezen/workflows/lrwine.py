@@ -32,7 +32,9 @@ LogisticRegressionInterface = dataclass_json(
 
 @task
 def get_data() -> pd.DataFrame:
-    """Get the wine dataset."""
+    """
+    Get the wine dataset.
+    """
     # import time
 
     # time.sleep(3600)
@@ -41,7 +43,9 @@ def get_data() -> pd.DataFrame:
 
 @task
 def process_data(data: pd.DataFrame) -> pd.DataFrame:
-    """Simplify the task from a 3-class to a binary classification problem."""
+    """
+    Simplify the task from a 3-class to a binary classification problem.
+    """
     return data.assign(target=lambda x: x["target"].where(x["target"] == 0, 1))
 
 
@@ -49,7 +53,9 @@ def process_data(data: pd.DataFrame) -> pd.DataFrame:
 def train_model(
     data: pd.DataFrame, logistic_regression: LogisticRegressionInterface
 ) -> LogisticRegression:
-    """Train a model on the wine dataset."""
+    """
+    Train a model on the wine dataset.
+    """
     features = data.drop("target", axis="columns")
     target = data["target"]
     logger.info(f"{pformat(logistic_regression)}\n\n")
@@ -65,7 +71,9 @@ def training_workflow(
         max_iter=2000
     ),
 ) -> LogisticRegression:
-    """Put all of the steps together into a single workflow."""
+    """
+    Put all of the steps together into a single workflow.
+    """
     data = get_data()
     processed_data = process_data(data=data)
     return train_model(
