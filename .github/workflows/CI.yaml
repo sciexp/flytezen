@@ -113,8 +113,6 @@ jobs:
         WORKFLOW_NAME: ${{ vars.WORKFLOW_NAME }}
         WORKFLOW_PROJECT: ${{ vars.WORKFLOW_PROJECT }}
         WORKFLOW_DOMAIN: ${{ vars.WORKFLOW_DOMAIN }}
-        WORKFLOW_REGISTRATION_MODE: ${{ vars.WORKFLOW_REGISTRATION_MODE }}
-        WORKFLOW_IMAGE: ${{ vars.WORKFLOW_IMAGE }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -147,7 +145,7 @@ jobs:
     - name: Execute workflow
       id: execute
       run: |
-        make run
+        make run_prod
 
     - name: Create config tarball
       id: save-hydra-outputs
