@@ -283,7 +283,6 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	@echo
 	PAGER=cat gh secret list --repo=$(GH_REPO)
 
-# gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
 # gh variable set WORKFLOW_REGISTRATION_MODE --repo="$(GH_REPO)" --body="prod"
 ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	@echo "variables before updates:"
@@ -295,6 +294,7 @@ ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
 	gh variable set WORKFLOW_PACKAGE_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_PACKAGE_PATH)"
 	gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
+	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
 	@echo
 	@echo variables after updates:
 	@echo
