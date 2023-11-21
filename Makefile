@@ -44,7 +44,7 @@ typecheck: ## Run typechecker
 # local dev cluster
 #------------------
 
-local_image: ## Build local image.
+build_local_image: ## Build local image.
 	@echo "building image: $(WORKFLOW_IMAGE):$(GIT_BRANCH)"
 	@echo
 	docker images -a $(WORKFLOW_IMAGE)
