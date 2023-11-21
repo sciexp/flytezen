@@ -129,6 +129,7 @@ black = { version = ">=23.10.0", extras = ["jupyter"] }
 mypy = ">=1.6.1"
 pyright = ">=1.1.336"
 ruff = ">=0.1.0"
+docformatter = { version = ">=1.7.5", extras = ["tomli"] }
 
 [tool.poetry.group.test]
 optional = true
@@ -234,7 +235,7 @@ formats = "ipynb,text//py:percent,text//md"
 
 [tool.poetry]
 name = "flytezen"
-version = "0.1.0.dev1"
+version = "0.0.1.dev1"
 packages = [
     { include = "flytezen", from = "src" },
 ]
