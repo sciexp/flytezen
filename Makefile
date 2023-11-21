@@ -153,9 +153,21 @@ package_and_register: package_workflows register_workflows
 run_help: ## Print hydra help for execute script.
 	poetry run flytezen --help
 
+# Capture additional arguments to pass to hydra-zen cli
+# converting them to make do-nothing targets
+ARGS = $(filter-out $@,$(MAKECMDGOALS))
+%:
+	@:
+
 .PHONY: run
 run: ## Run registered workflow (sync).
-	poetry run flytezen
+	poetry run flytezen $(ARGS)
+
+run_prod: ## Run registered workflow (sync).
+	poetry run flytezen mode=prod $(ARGS)
+
+run_local: ## Run registered workflow (sync).
+	poetry run flytezen mode=local $(ARGS)
 
 multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
 	poetry run flytezen --multirun workflow.hyperparameters.C=0.2,0.5
@@ -163,7 +175,7 @@ multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
 run_async: ## Run registered workflow (async).
 	poetry run flytezen workflow.wait=False
 
-run_unregistered: ## Dispatch unregistered run from flytekit cli
+run_cli_hp_config: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
 	--remote \
 	--project $(WORKFLOW_PROJECT) \
@@ -173,11 +185,12 @@ run_unregistered: ## Dispatch unregistered run from flytekit cli
 	$(WORKFLOW_NAME) \
 	--hyperparameters $(WORKFLOW_FILE_WORKFLOW_ARGS)
 
-run_local: ## Dispatch unregistered run from flytekit cli
+run_cli_hp_config_local: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
 	$(WORKFLOW_FILE) \
 	$(WORKFLOW_NAME) \
 	--hyperparameters $(WORKFLOW_FILE_WORKFLOW_ARGS)
+
 #-------------
 # CI
 #-------------
@@ -270,6 +283,8 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	@echo
 	PAGER=cat gh secret list --repo=$(GH_REPO)
 
+# gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
+# gh variable set WORKFLOW_REGISTRATION_MODE --repo="$(GH_REPO)" --body="prod"
 ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	@echo "variables before updates:"
 	@echo
@@ -280,8 +295,6 @@ ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
 	gh variable set WORKFLOW_PACKAGE_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_PACKAGE_PATH)"
 	gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
-	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
-	gh variable set WORKFLOW_REGISTRATION_MODE --repo="$(GH_REPO)" --body="prod"
 	@echo
 	@echo variables after updates:
 	@echo
