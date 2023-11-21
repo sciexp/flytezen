@@ -252,14 +252,17 @@ def generate_workflow_inputs(
 
 def main() -> None:
     """
-    Main function that executes the workflow on the remote in one of two modes
-    determined by "WORKFLOW_REGISTRATION_MODE":
+    Main function that executes the workflow in one of the three modes
+    determined by the config group mode (local, dev, prod):
 
+    - In 'local' mode, it executes the workflow locally without a remote
     - In 'dev' mode, it uses the container mode.imagewith mode.tag current
       branch tag for execution. This allows executing a copy of updated local
       workflow on the remote prior to building a new image.
     - In 'prod' mode, it uses the container image with the git short SHA tag
       just after building an image. This is primarily for CI execution.
+
+    See the `execute_workflow` function for more details.
 
     Note this logic regarding the image tag is independent of setting domain to
     "development", "staging", "production", etc.
