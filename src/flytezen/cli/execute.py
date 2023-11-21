@@ -4,10 +4,13 @@ import os
 import pathlib
 import sys
 import tempfile
+from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Dict
 
 import rich.syntax
 import rich.tree
+from dataclasses_json import dataclass_json
 from dotenv import load_dotenv
 from flytekit.configuration import Config as FlyteConfig
 from flytekit.configuration import (
@@ -32,64 +35,104 @@ logger = configure_logging("execute")
 builds = make_custom_builds_fn(populate_full_signature=True)
 
 
+class ExecutionModeName(Enum):
+    """
+    Enumerates the possible execution modes for a workflow.
+
+    Attributes:
+        LOCAL: Represents a local execution mode, where the workflow is executed
+        locally without remote registration.
+        DEV: Represents a development execution mode, where the workflow is
+        executed remotely for development purposes. This mode is used for
+        testing workflow code changes remotely without needing to rebuild and
+        push the container image so long as one with the current branch tag
+        already exists.
+        PROD: Represents a production execution mode, where the workflow is
+        registered and executed remotely, intended for production or continuous
+        integration (CI) environments. The image tag is set to the git commit
+        short SHA.
+    """
+
+    LOCAL = "local"
+    DEV = "dev"
+    PROD = "prod"
+
+    def __str__(self):
+        return self.value
+
+
+@dataclass_json
+@dataclass
+class ExecutionMode:
+    """
+    Represents the execution configuration for a workflow.
+
+    This dataclass encapsulates settings related to the execution environment,
+    including the mode of execution, container image details, and workflow
+    versioning information.
+
+    Attributes:
+        name (ExecutionModeName): The execution mode, which dictates how and where the workflow is executed.
+        image (str): The full name of the container image to be used in the execution, including the registry path.
+        tag (str): The tag appended to the container image, usually git branch (DEV) or commit hash (PROD).
+        version (str): A string representing the version of the workflow, typically including a commit hash or other identifiers.
+    """
+
+    name: ExecutionModeName = ExecutionModeName.DEV
+    image: str = "ghcr.io/sciexp/flytezen"
+    tag: str = "main"
+    version: str = f"flytezen-main-{random_alphanumeric_suffix()}"
+
+
 def execute_workflow(
     zen_cfg: DictConfig,
-    name: str = "training_workflow",
     package_path: str = "src",
     import_path: str = "flytezen.workflows.lrwine",
+    name: str = "training_workflow",
     project: str = "flytesnacks",
     domain: str = "development",
-    mode: str = "dev",
-    image: str = "ghcr.io/sciexp/flytezen",
-    tag: str = "main",
     wait: bool = True,
-    version: str = f"flytezen-main-{random_alphanumeric_suffix()}",
+    mode: ExecutionMode = ExecutionMode(),
     inputs: Dict[str, Any] = {},
 ) -> None:
     """
-    Executes the given workflow based on the Hydra configuration, supporting two modes
-    of execution controlled by 'mode':
+    Executes the given workflow based on the Hydra configuration. The execution
+    mode is controlled by the 'mode' parameter, which is an instance of the
+    ExecutionMode dataclass. This dataclass encapsulates execution configuration
+    details including the execution environment name (local, dev, prod),
+    container image details, and versioning information.
 
-    - 'local': Attempts to execute the workflow locally without registering it on the remote.
+    The 'mode' parameter allows for the following execution environments:
+    - LOCAL: Attempts to execute the workflow locally without registering it on
+      the remote.
+    - DEV: Executes a copy of the local workflow on the remote for development
+      purposes. This mode allows for testing changes to the workflow code
+      remotely without needing to rebuild and push the container image. However,
+      rebuilding and pushing the image may be required for significant
+      dependency changes. The workflow version is appended with a random
+      alphanumeric string. This mode is intended for development purposes only
+      and should not be used in production or CI environments.
+    - PROD: Registers the workflow on the remote and then executes it, intended
+      for production or CI environments. This mode executes the workflow against
+      a container image that has been built and pushed to the registry specified
+      in the ExecutionMode image. The image used is tagged with the git short
+      SHA.
 
-    - 'dev': Executes a copy of the local workflow on the remote for development purposes.
-      This mode allows for testing changes to the workflow code remotely without needing
-      to rebuild and push the container image. If there is a significant change in dependencies,
-      rebuilding and pushing the image may be required (see `make -n build_images`). This mode
-      uses the container image tagged with the current branch tag, which corresponds to the
-      git short SHA tag pointing to the HEAD of the branch. The workflow version is appended
-      with a random string generated by '-dev-{secrets.token_urlsafe(2)}'. This mode is
-      intended for development purposes only and should not be used in production or CI
-      environments. Refer to `make -n run_unregistered` for usage examples.
-
-    - 'prod': Registers the workflow on the remote and then executes it, intended for
-      production or CI environments. This mode executes the workflow against a container
-      image that has been built and pushed to the registry specified in execution.image.
-      The container image used in this mode is tagged with the git short SHA. This mode
-      requires that the container image with code equivalent to the current local copy has
-      been built, typically in CI environments just prior to executing the workflow.
-
-    In both modes, the workflow is registered with Flyte and then executed. The function
-    logs various informational messages, including the execution URL, and optionally waits
-    for workflow completion based on the `wait` flag in the workflow configuration.
-
-
+    In all modes, the workflow is registered with Flyte and executed. The
+    function logs various informational messages, including the execution URL,
+    and optionally waits for workflow completion based on the `wait` flag in the
+    workflow configuration.
 
     Args:
-        name (str): The name of the workflow function to execute.
+        zen_cfg (DictConfig): Configuration for the execution.
         package_path (str): The path to the workflow package.
         import_path (str): The import path of the workflow function to execute.
+        name (str): The name of the workflow function to execute.
         project (str): The Flyte project in which to register or execute the workflow.
         domain (str): The Flyte domain in which to register or execute the workflow.
-        mode (str): Mode of workflow registration - 'dev' for fast registration and
-                    'prod' for manual registration.
-        image (str): The container image FQN to use for executing the workflow.
-        tag (str): The tag to append to the container image FQN to use for executing the workflow.
-        wait (bool): Flag indicating whether to wait for the workflow execution to complete or run async.
-        version (str): The version of the workflow, including a git commit hash or other identifier(s).
-        inputs (Dict[str, Any]): The inputs to the workflow function to execute. Keys are strings of
-        the names of the workflow function arguments and values are the specific input values
-        overriding the defaults.
+        wait (bool): Flag indicating whether to wait for the workflow execution to complete.
+        mode (ExecutionMode): An instance of ExecutionMode specifying the execution environment and settings.
+        inputs (Dict[str, Any]): Inputs to the workflow function. Keys are argument names, values are the inputs.
 
         TODO: Dynamic configuration of `inputs` argument should be required, but it is placed
         at the bottom due to the length in printing the config.
@@ -97,7 +140,7 @@ def execute_workflow(
         to the top of the arg list and made required.
 
     Raises:
-        Sets exit status one if 'mode' has an invalid value.
+        Sets exit status one if an invalid execution mode is specified.
     """
     config_yaml = to_yaml(zen_cfg)
     tree = rich.tree.Tree("workflow", style="dim", guide_style="dim")
@@ -108,7 +151,7 @@ def execute_workflow(
     entity = getattr(module, name)
 
     # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
-    if mode == "local":
+    if mode.name == ExecutionModeName.LOCAL:
         output = entity(**inputs)
         logger.info(f"Workflow output:\n\n{output}\n")
         return
@@ -118,12 +161,12 @@ def execute_workflow(
         default_project=project,
         default_domain=domain,
     )
-    image_config = ImageConfig.auto(img_name=f"{image}:{tag}")
+    image_config = ImageConfig.auto(img_name=f"{mode.image}:{mode.tag}")
 
-    if mode == "dev":
+    if mode.name == ExecutionModeName.DEV:
         logger.warning(
-            "This mode is intended for development purposes only.\n\n"
-            "Please use 'prod' mode for production or CI environments.\n\n"
+            "This mode.name is intended for development purposes only.\n\n"
+            "Please use 'prod' mode.name for production or CI environments.\n\n"
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             logger.debug(
@@ -143,29 +186,29 @@ def execute_workflow(
                 distribution_location=upload_url,
             ),
         )
-    elif mode == "prod":
+    elif mode.name == ExecutionModeName.PROD:
         logger.info(f"Registering workflow:\n\n\t{import_path}\n")
         serialization_settings = SerializationSettings(
             image_config=image_config
         )
     else:
         logger.error(
-            f"Invalid workflow registration mode: {mode}. "
-            "Please set WORKFLOW_REGISTRATION_MODE to either 'dev'"
-            "or 'prod' in your environment."
+            f"Invalid workflow registration mode: {mode.name}. "
+            "Please set the 'name' of ExecutionMode to one of the following: "
+            f"{', '.join([e.value for e in ExecutionModeName])}."
         )
         sys.exit(1)
 
     remote.register_workflow(
         entity=entity,
         serialization_settings=serialization_settings,
-        version=version,
+        version=mode.version,
     )
     execution = remote.execute(
         entity=entity,
         inputs=inputs,
-        version=version,
-        execution_name_prefix=version,
+        version=mode.version,
+        execution_name_prefix=mode.version,
         wait=False,
     )
     logger.info(f"Execution submitted:\n\n{execution}\n")
@@ -209,20 +252,20 @@ def generate_workflow_inputs(
 
 def main() -> None:
     """
-    Main function that executes the workflow on the remote in one of two modes determined
-    by "WORKFLOW_REGISTRATION_MODE":
+    Main function that executes the workflow on the remote in one of two modes
+    determined by "WORKFLOW_REGISTRATION_MODE":
 
-    - In 'dev' mode, it uses the container image with the current branch tag for execution.
-      This allows executing a copy of updated local workflow on the remote
-      prior to building a new image.
-    - In 'prod' mode, it uses the container image with the git short SHA tag just after
-      building an image. This is primarily for CI execution.
+    - In 'dev' mode, it uses the container mode.imagewith mode.tag current
+      branch tag for execution. This allows executing a copy of updated local
+      workflow on the remote prior to building a new image.
+    - In 'prod' mode, it uses the container image with the git short SHA tag
+      just after building an image. This is primarily for CI execution.
 
-    Note this logic regarding the image tag is independent of setting domain to "development",
-    "staging", "production", etc.
+    Note this logic regarding the image tag is independent of setting domain to
+    "development", "staging", "production", etc.
 
-    The workflow version is also separately determined based on the current git repo name,
-    branch, and commit SHA.
+    The workflow version is also separately determined based on the current git
+    repo name, branch, and commit SHA.
     """
 
     load_dotenv()
@@ -234,8 +277,6 @@ def main() -> None:
             "WORKFLOW_IMPORT_PATH",
             "WORKFLOW_PROJECT",
             "WORKFLOW_DOMAIN",
-            "WORKFLOW_REGISTRATION_MODE",
-            "WORKFLOW_IMAGE",
         ],
         logger,
     ) or sys.exit(1)
@@ -246,19 +287,34 @@ def main() -> None:
 
     repo_name, git_branch, git_short_sha = git_info_to_workflow_version(logger)
 
-    workflow_registration_mode = os.environ.get("WORKFLOW_REGISTRATION_MODE")
-    if workflow_registration_mode == "dev":
-        image_tag = git_branch
-        workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}-dev-{random_alphanumeric_suffix()}"
-    elif workflow_registration_mode == "prod":
-        image_tag = git_short_sha
-        workflow_version = f"{repo_name}-{git_branch}-{git_short_sha}"
-    else:
-        logger.error(
-            f"Invalid workflow registration mode: {workflow_registration_mode}.\n"
-            "Please set WORKFLOW_REGISTRATION_MODE to either 'dev' or 'prod' in your environment."
-        )
-        sys.exit(1)
+    workflow_image = os.environ.get(
+        "WORKFLOW_IMAGE",
+        "localhost:30000/flytezen",
+    )
+    ModeConf = builds(ExecutionMode)
+    local_mode = ModeConf(
+        name=ExecutionModeName.LOCAL,
+        image="",
+        tag="",
+        version=f"{repo_name}-{git_branch}-{git_short_sha}-local-{random_alphanumeric_suffix()}",
+    )
+    dev_mode = ModeConf(
+        name=ExecutionModeName.DEV,
+        image=workflow_image,
+        tag=git_branch,
+        version=f"{repo_name}-{git_branch}-{git_short_sha}-dev-{random_alphanumeric_suffix()}",
+    )
+    prod_mode = ModeConf(
+        name=ExecutionModeName.PROD,
+        image=workflow_image,
+        tag=git_short_sha,
+        version=f"{repo_name}-{git_branch}-{git_short_sha}",
+    )
+
+    mode_store = store(group="mode")
+    mode_store(local_mode, name="local")
+    mode_store(dev_mode, name="dev")
+    mode_store(prod_mode, name="prod")
 
     workflow_import_path = os.environ.get("WORKFLOW_IMPORT_PATH")
     workflow_name = os.environ.get("WORKFLOW_NAME")
@@ -270,6 +326,7 @@ def main() -> None:
     #
     # The separate dependency on the workflow import path and name
     # here and in ExecutionConf prevents hydra CLI override of the workflow
+    # from propagating to the dynamic instantiation of the workflow inputs.
     workflow_inputs = generate_workflow_inputs(
         workflow_import_path=workflow_import_path,
         workflow_name=workflow_name,
@@ -286,16 +343,11 @@ def main() -> None:
     # > inputs.name=flyte
     ExecutionConf = builds(
         execute_workflow,
-        name=workflow_name,  # NOT overridable, determines inputs
-        import_path=workflow_import_path,  # NOT overridable, determines inputs
-        mode=workflow_registration_mode,  # NOT overridable, determines image tag
-        version=workflow_version.lower(),  # NOT overridable, depends on git branch and commit sha
-        image=os.environ.get(
-            "WORKFLOW_IMAGE"
-        ),  # Overridable, may be private information
-        tag=image_tag,  # NOT overridable, depends on git branch or commit sha
-        inputs=workflow_inputs,  # Overridable subcomponents, see `flytezen -h`
         # package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"), # Overridable
+        import_path=workflow_import_path,  # NOT overridable, determines inputs
+        name=workflow_name,  # NOT overridable, determines inputs
+        mode=dev_mode,  # Overridable, groups dev | local | prod
+        inputs=workflow_inputs,  # Overridable subcomponents, see `flytezen -h`
         # project=os.environ.get("WORKFLOW_PROJECT"), # Overridable
         # domain=os.environ.get("WORKFLOW_DOMAIN"), # Overridable
         # wait=True, # Overridable
@@ -304,6 +356,7 @@ def main() -> None:
     store(
         ExecutionConf,
         name="execute_workflow",
+        hydra_defaults=["_self_", {"mode": "dev"}],
     )
 
     store.add_to_hydra_store()
@@ -317,8 +370,8 @@ def main() -> None:
 
 if __name__ == "__main__":
     """
-    This script executes a Flyte workflow configured with hydra-zen.
-    > flytezen --help
+    This script executes a Flyte workflow configured with hydra-zen. > flytezen
+    --help.
 
     == Config ==
     Override anything in the config (foo.bar=value)
@@ -330,11 +383,13 @@ if __name__ == "__main__":
     import_path: flytezen.workflows.lrwine
     project: flytesnacks
     domain: development
-    mode: dev
-    image: ghcr.io/org/flytezen
-    tag: main
     wait: true
-    version: flytezen-main-16323b3-dev-a8x
+    mode:
+      _target_: flytezen.cli.execute.ExecutionMode
+      name: DEV
+      image: localhost:30000/flytezen
+      tag: main
+      version: flytezen-main-16323b3-dev-a8x
     inputs:
       logistic_regression:
         _target_: sklearn.linear_model._logistic.LogisticRegression
@@ -367,10 +422,11 @@ if __name__ == "__main__":
         the CI actions workflow in the `Upload config artifact` step.
 
     Warning:
-        Hydra command-line overrides are only intended to be supported for inputs.
-        Do not override workflow-level parameters. This will lead to unexpected behavior.
-        You can modify workflow parameters with `.env` or environment variables.
-        Note  `version` and `tag` are determined automatically in python based on `mode`.
-        The workflow execution parameters are stored in the hydra config output for reference.
+        Hydra command-line overrides are only intended to be supported for
+        inputs. Do not override workflow-level parameters. This will lead to
+        unexpected behavior. You can modify workflow parameters with `.env` or
+        environment variables. Note  `version` and `tag` are determined
+        automatically in python based on `mode`. The workflow execution
+        parameters are stored in the hydra config output for reference.
     """
     main()
