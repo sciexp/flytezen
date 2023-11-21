@@ -69,7 +69,13 @@ def git_info_to_workflow_version(
             .decode()
         )
         repo_name = remote_url.split("/")[-1].rstrip(".git")
-        return repo_name, git_branch, git_short_sha
+        for string in [repo_name, git_branch, git_short_sha]:
+            if any(char.isupper() for char in string):
+                logger.warning(
+                    f"String '{string}' contains capitalized characters. Converting to lowercase."
+                )
+
+        return repo_name.lower(), git_branch.lower(), git_short_sha.lower()
     except subprocess.CalledProcessError as e:
         logger.error(f"Error obtaining git information: {e}")
         raise
