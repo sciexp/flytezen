@@ -24,7 +24,6 @@ from omegaconf import DictConfig
 
 from flytezen.cli.execution_utils import (
     EntityConfig,
-    check_required_env_vars,
     generate_entity_configs,
     generate_hydra_config,
     git_info_to_workflow_version,
@@ -295,21 +294,6 @@ def main() -> None:
     """
 
     load_dotenv()
-
-    # check_required_env_vars(
-    #     [
-    #         "WORKFLOW_IMAGE",
-    #     ],
-    #     [
-    #         "WORKFLOW_NAME",
-    #         "WORKFLOW_PACKAGE_PATH",
-    #         "WORKFLOW_IMPORT_PATH",
-    #         "WORKFLOW_PROJECT",
-    #         "WORKFLOW_DOMAIN",
-    #         "WORKFLOW_IMAGE",
-    #     ],
-    #     logger,
-    # ) or sys.exit(1)
 
     # equivalent to
     # hydra_zen.wrapper._implementations.store
