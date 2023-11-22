@@ -49,43 +49,35 @@ def generate_entity_configs(
     parent_module_path: str, entity_store: ZenStore, logger: logging.Logger
 ) -> None:
     parent_module = importlib.import_module(parent_module_path)
-
-    # Define the type union
     EntityTypes = Union[WorkflowBase, PythonTask]
 
-    entities = {}
-
-    # Iterate over all submodules in the parent module
-    for submodule_info in pkgutil.iter_modules(
-        parent_module.__path__, parent_module.__name__ + "."
-    ):
-        # import submodule
-        logger.debug(f"Checking submodule: {submodule_info.name}")
+    # iterate over submodules in the parent module
+    for submodule_info in pkgutil.iter_modules(parent_module.__path__, parent_module.__name__ + "."):
+        # Import the submodule
         submodule = importlib.import_module(submodule_info.name)
+        logger.debug(f"Checking submodule: {submodule_info.name}")
 
-        # iterate over entities in the submodule
-        for entity_name in dir(submodule):
-            logger.debug(f"Checking entity: {entity_name}")
-            entity = getattr(submodule, entity_name)
+        # use inspect.getmembers to directly get entities that are instances of EntityTypes
+        entities = inspect.getmembers(submodule, lambda member: isinstance(member, WorkflowBase))
 
-            # Check if the entity is an instance of WorkflowBase or PythonTask
-            # if isinstance(entity, EntityTypes.__args__):
-            if isinstance(entity, WorkflowBase):
-                # Construct an instance (or a configuration) of the entity
-                module_name = submodule_info.name.split(".")[-1]
-                entity_inputs = generate_entity_inputs(entity)
-                entity_instance = builds(
-                    EntityConfig,
-                    inputs=entity_inputs,
-                    module_name=module_name,
-                    entity_name=entity_name,
-                    entity_type=type(entity).__name__,
-                )
+        for entity_name, entity in entities:
+            logger.debug(f"Found entity: {entity_name}")
 
-                # Store the entity instance in a group with a composed name
-                composed_name = module_name + "_" + entity_name
-                entity_store(entity_instance, name=composed_name)
-                logger.debug(f"Stored entity: {composed_name}")
+            # construct an instance (or a configuration) of the entity
+            module_name = submodule_info.name.split(".")[-1]
+            entity_inputs = generate_entity_inputs(entity)
+            entity_instance = builds(
+                EntityConfig,
+                inputs=entity_inputs,
+                module_name=module_name,
+                entity_name=entity_name,
+                entity_type=type(entity).__name__,
+            )
+
+            # store the entity instance in the entity_store
+            composed_name = module_name + "_" + entity_name
+            entity_store(entity_instance, name=composed_name)
+            logger.debug(f"Stored entity: {composed_name} in entity_store")
 
 
 def generate_entity_inputs(
