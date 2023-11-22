@@ -296,16 +296,20 @@ def main() -> None:
 
     load_dotenv()
 
-    check_required_env_vars(
-        [
-            "WORKFLOW_NAME",
-            "WORKFLOW_PACKAGE_PATH",
-            "WORKFLOW_IMPORT_PATH",
-            "WORKFLOW_PROJECT",
-            "WORKFLOW_DOMAIN",
-        ],
-        logger,
-    ) or sys.exit(1)
+    # check_required_env_vars(
+    #     [
+    #         "WORKFLOW_IMAGE",
+    #     ],
+    #     [
+    #         "WORKFLOW_NAME",
+    #         "WORKFLOW_PACKAGE_PATH",
+    #         "WORKFLOW_IMPORT_PATH",
+    #         "WORKFLOW_PROJECT",
+    #         "WORKFLOW_DOMAIN",
+    #         "WORKFLOW_IMAGE",
+    #     ],
+    #     logger,
+    # ) or sys.exit(1)
 
     # equivalent to
     # hydra_zen.wrapper._implementations.store
