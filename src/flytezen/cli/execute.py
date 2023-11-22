@@ -19,11 +19,13 @@ from flytekit.configuration import (
     SerializationSettings,
 )
 from flytekit.remote import FlyteRemote
-from hydra_zen import ZenStore, make_custom_builds_fn, to_yaml, zen
+from hydra_zen import ZenStore, make_config, make_custom_builds_fn, to_yaml, zen
 from omegaconf import DictConfig
 
 from flytezen.cli.execution_utils import (
+    EntityConfig,
     check_required_env_vars,
+    generate_entity_configs,
     generate_hydra_config,
     git_info_to_workflow_version,
     random_alphanumeric_suffix,
@@ -35,7 +37,7 @@ logger = configure_logging("execute")
 builds = make_custom_builds_fn(populate_full_signature=True)
 
 
-class ExecutionModeName(Enum):
+class ExecutionMode(str, Enum):
     """
     Enumerates the possible execution modes for a workflow.
 
@@ -53,17 +55,20 @@ class ExecutionModeName(Enum):
         short SHA.
     """
 
+    # LOCAL = 1
+    # DEV = 2
+    # PROD = 3
     LOCAL = "local"
     DEV = "dev"
     PROD = "prod"
 
-    def __str__(self):
-        return self.value
+    # def __str__(self):
+    #     return self.value
 
 
 @dataclass_json
 @dataclass
-class ExecutionMode:
+class ExecutionContext:
     """
     Represents the execution configuration for a workflow.
 
@@ -72,33 +77,42 @@ class ExecutionMode:
     versioning information.
 
     Attributes:
-        name (ExecutionModeName): The execution mode, which dictates how and where the workflow is executed.
+        name (ExecutionMode): The execution mode, which dictates how and where the workflow is executed.
         image (str): The full name of the container image to be used in the execution, including the registry path.
         tag (str): The tag appended to the container image, usually git branch (DEV) or commit hash (PROD).
         version (str): A string representing the version of the workflow, typically including a commit hash or other identifiers.
     """
 
-    name: ExecutionModeName = ExecutionModeName.DEV
+    # name: ExecutionMode = ExecutionMode.DEV
+    mode: str = "dev"
     image: str = "ghcr.io/sciexp/flytezen"
     tag: str = "main"
     version: str = f"flytezen-main-{random_alphanumeric_suffix()}"
+    package_path: str = "src"
+    import_path: str = "flytezen.workflows"
+    project: str = "flytesnacks"
+    domain: str = "development"
+    wait: bool = True
 
 
 def execute_workflow(
     zen_cfg: DictConfig,
-    package_path: str = "src",
-    import_path: str = "flytezen.workflows.lrwine",
-    name: str = "training_workflow",
-    project: str = "flytesnacks",
-    domain: str = "development",
-    wait: bool = True,
-    mode: ExecutionMode = ExecutionMode(),
-    inputs: Dict[str, Any] = {},
+    execution_context: ExecutionContext,
+    # name: str = "training_workflow",
+    # inputs: Dict[str, Any] = {},
+    entity_config: EntityConfig,
+    # entities: EntityConfigs,
+    # entities: Dict[str, Any],
+    # package_path: str = "src",
+    # import_path: str = "flytezen.workflows.lrwine",
+    # project: str = "flytesnacks",
+    # domain: str = "development",
+    # wait: bool = True,
 ) -> None:
     """
     Executes the given workflow based on the Hydra configuration. The execution
     mode is controlled by the 'mode' parameter, which is an instance of the
-    ExecutionMode dataclass. This dataclass encapsulates execution configuration
+    ExecutionContext dataclass. This dataclass encapsulates execution configuration
     details including the execution environment name (local, dev, prod),
     container image details, and versioning information.
 
@@ -115,7 +129,7 @@ def execute_workflow(
     - PROD: Registers the workflow on the remote and then executes it, intended
       for production or CI environments. This mode executes the workflow against
       a container image that has been built and pushed to the registry specified
-      in the ExecutionMode image. The image used is tagged with the git short
+      in the ExecutionContext image. The image used is tagged with the git short
       SHA.
 
     In all modes, the workflow is registered with Flyte and executed. The
@@ -131,7 +145,7 @@ def execute_workflow(
         project (str): The Flyte project in which to register or execute the workflow.
         domain (str): The Flyte domain in which to register or execute the workflow.
         wait (bool): Flag indicating whether to wait for the workflow execution to complete.
-        mode (ExecutionMode): An instance of ExecutionMode specifying the execution environment and settings.
+        mode (ExecutionContext): An instance of ExecutionContext specifying the execution environment and settings.
         inputs (Dict[str, Any]): Inputs to the workflow function. Keys are argument names, values are the inputs.
 
         TODO: Dynamic configuration of `inputs` argument should be required, but it is placed
@@ -143,37 +157,43 @@ def execute_workflow(
         Sets exit status one if an invalid execution mode is specified.
     """
     config_yaml = to_yaml(zen_cfg)
-    tree = rich.tree.Tree("workflow", style="dim", guide_style="dim")
+    tree = rich.tree.Tree("execute_workflow", style="dim", guide_style="dim")
     tree.add(rich.syntax.Syntax(config_yaml, "yaml", theme="monokai"))
     rich.print(tree)
 
-    module = importlib.import_module(import_path)
-    entity = getattr(module, name)
+    module = importlib.import_module(
+        f"{execution_context.import_path}.{entity_config.module_name}"
+    )
+    entity = getattr(module, entity_config.entity_name)
 
     # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
-    if mode.name == ExecutionModeName.LOCAL:
-        output = entity(**inputs)
+    # if execution_context.mode == ExecutionMode.LOCAL:
+    if execution_context.mode == "local":
+        output = entity(**entity_config.inputs)
         logger.info(f"Workflow output:\n\n{output}\n")
         return
 
     remote = FlyteRemote(
         config=FlyteConfig.auto(),
-        default_project=project,
-        default_domain=domain,
+        default_project=execution_context.project,
+        default_domain=execution_context.domain,
     )
-    image_config = ImageConfig.auto(img_name=f"{mode.image}:{mode.tag}")
+    image_config = ImageConfig.auto(
+        img_name=f"{execution_context.image}:{execution_context.tag}"
+    )
 
-    if mode.name == ExecutionModeName.DEV:
+    # if execution_context.mode == ExecutionMode.DEV:
+    if execution_context.mode == "dev":
         logger.warning(
-            "This mode.name is intended for development purposes only.\n\n"
-            "Please use 'prod' mode.name for production or CI environments.\n\n"
+            "This execution_context.mode is intended for development purposes only.\n\n"
+            "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             logger.debug(
                 f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
             )
             _, upload_url = remote.fast_package(
-                pathlib.Path(package_path),
+                pathlib.Path(execution_context.package_path),
                 output=tmp_dir,
             )
         logger.info(f"Workflow package uploaded to:\n\n  {upload_url}\n")
@@ -186,35 +206,38 @@ def execute_workflow(
                 distribution_location=upload_url,
             ),
         )
-    elif mode.name == ExecutionModeName.PROD:
-        logger.info(f"Registering workflow:\n\n\t{import_path}\n")
+    # elif execution_context.mode == ExecutionMode.PROD:
+    elif execution_context.mode == "prod":
+        logger.info(
+            f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
+        )
         serialization_settings = SerializationSettings(
             image_config=image_config
         )
     else:
         logger.error(
-            f"Invalid workflow registration mode: {mode.name}. "
-            "Please set the 'name' of ExecutionMode to one of the following: "
-            f"{', '.join([e.value for e in ExecutionModeName])}."
+            f"Invalid workflow registration mode: {execution_context.mode}. "
+            "Please set the 'name' of ExecutionContext to one of the following: "
+            f"{', '.join([e.value for e in ExecutionMode])}."
         )
         sys.exit(1)
 
     remote.register_workflow(
         entity=entity,
         serialization_settings=serialization_settings,
-        version=mode.version,
+        version=execution_context.version,
     )
     execution = remote.execute(
         entity=entity,
-        inputs=inputs,
-        version=mode.version,
-        execution_name_prefix=mode.version,
+        inputs=entity_config.inputs,
+        version=execution_context.version,
+        execution_name_prefix=execution_context.version,
         wait=False,
     )
     logger.info(f"Execution submitted:\n\n{execution}\n")
     logger.info(f"Execution url:\n\n{remote.generate_console_url(execution)}\n")
 
-    if wait:
+    if execution_context.wait:
         wait_for_workflow_completion(execution, remote, logger)
 
 
@@ -256,7 +279,7 @@ def main() -> None:
     determined by the config group mode (local, dev, prod):
 
     - In 'local' mode, it executes the workflow locally without a remote
-    - In 'dev' mode, it uses the container mode.imagewith mode.tag current
+    - In 'dev' mode, it uses the container execution_context.imagewith execution_context.tag current
       branch tag for execution. This allows executing a copy of updated local
       workflow on the remote prior to building a new image.
     - In 'prod' mode, it uses the container image with the git short SHA tag
@@ -284,7 +307,14 @@ def main() -> None:
         logger,
     ) or sys.exit(1)
 
-    store = ZenStore(name="flytezen", deferred_hydra_store=False)
+    # equivalent to
+    # hydra_zen.wrapper._implementations.store
+    # except in name
+    store = ZenStore(
+        name="flytezen",
+        deferred_to_config=True,
+        deferred_hydra_store=True,
+    )
 
     store(generate_hydra_config())
 
@@ -294,131 +324,149 @@ def main() -> None:
         "WORKFLOW_IMAGE",
         "localhost:30000/flytezen",
     )
-    ModeConf = builds(ExecutionMode)
-    local_mode = ModeConf(
-        name=ExecutionModeName.LOCAL,
+    ExecutionContextConf = builds(ExecutionContext)
+    ContextConf = builds(ExecutionContext)
+    local_execution_context = ContextConf(
+        # mode=ExecutionContext.LOCAL,
+        mode="local",
         image="",
         tag="",
         version=f"{repo_name}-{git_branch}-{git_short_sha}-local-{random_alphanumeric_suffix()}",
     )
-    dev_mode = ModeConf(
-        name=ExecutionModeName.DEV,
+    dev_execution_context = ContextConf(
+        # mode=ExecutionContext.DEV,
+        mode="dev",
         image=workflow_image,
         tag=git_branch,
         version=f"{repo_name}-{git_branch}-{git_short_sha}-dev-{random_alphanumeric_suffix()}",
     )
-    prod_mode = ModeConf(
-        name=ExecutionModeName.PROD,
+    prod_execution_context = ContextConf(
+        # mode=ExecutionContext.PROD,
+        mode="prod",
         image=workflow_image,
         tag=git_short_sha,
         version=f"{repo_name}-{git_branch}-{git_short_sha}",
     )
 
-    mode_store = store(group="mode")
-    mode_store(local_mode, name="local")
-    mode_store(dev_mode, name="dev")
-    mode_store(prod_mode, name="prod")
+    # Define the [execution] execution_context store
+    execution_context_store = store(group="execution_context")
+    execution_context_store(local_execution_context, name="local")
+    execution_context_store(dev_execution_context, name="dev")
+    execution_context_store(prod_execution_context, name="prod")
 
-    workflow_import_path = os.environ.get("WORKFLOW_IMPORT_PATH")
-    workflow_name = os.environ.get("WORKFLOW_NAME")
+    # Define the entity store
+    entity_config_store = store(group="entity_config")
 
-    # TODO: Build workflow inputs dynamically from workflow import path to allow
-    #       overrides from the hydra CLI.
-    #
-    # WorkflowConf = builds(generate_workflow_inputs)
-    #
-    # The separate dependency on the workflow import path and name
-    # here and in ExecutionConf prevents hydra CLI override of the workflow
-    # from propagating to the dynamic instantiation of the workflow inputs.
-    workflow_inputs = generate_workflow_inputs(
-        workflow_import_path=workflow_import_path,
-        workflow_name=workflow_name,
-    )
+    # The parent module whose submodules you want to iterate over
+    parent_module_path = "flytezen.workflows"
+    generate_entity_configs(parent_module_path, entity_config_store, logger)
 
-    # For parameters marked as `NOT overridable`,
-    # the value is determined by the env var
-    # and cannot be overriden by the hydra CLI.
-    # You can combine env vars and hydra CLI overrides
-    # > WORKFLOW_NAME=wf \
-    # > WORKFLOW_IMPORT_PATH=flytezen.workflows.example \
-    # > flytezen \
-    # > wait=false \
-    # > inputs.name=flyte
-    ExecutionConf = builds(
-        execute_workflow,
-        # package_path=os.environ.get("WORKFLOW_PACKAGE_PATH"), # Overridable
-        import_path=workflow_import_path,  # NOT overridable, determines inputs
-        name=workflow_name,  # NOT overridable, determines inputs
-        mode=dev_mode,  # Overridable, groups dev | local | prod
-        inputs=workflow_inputs,  # Overridable subcomponents, see `flytezen -h`
-        # project=os.environ.get("WORKFLOW_PROJECT"), # Overridable
-        # domain=os.environ.get("WORKFLOW_DOMAIN"), # Overridable
-        # wait=True, # Overridable
-    )
+    hydra_defaults = [
+        "_self_",
+        {"execution_context": "dev"},
+        {"entity_config": "lrwine_training_workflow"},
+    ]
+    # for name, entity in entities.items():
+    #     hydra_defaults.append({f"entities.{name}": "base"})
+    logger.info(f"hydra_defaults: {hydra_defaults}")
+    # hydra_defaults.append("_self_")
+
+    # default_entity_name = "lrwine_training_workflow"
+    # default_entity = entities[default_entity_name]
+
+    # store(
+    #     execute_workflow,
+    #     mode=dev_mode,
+    #     # entity=default_entity,
+    #     entities=entities,
+    #     name="execute_workflow",
+    #     hydra_defaults=hydra_defaults,
+    # )
 
     store(
-        ExecutionConf,
+        make_config(
+            hydra_defaults=[
+                "_self_",
+                {"execution_context": "dev"},
+                {"entity_config": "lrwine_training_workflow"},
+            ],
+            execution_context=None,
+            entity_config=None,
+        ),
         name="execute_workflow",
-        hydra_defaults=["_self_", {"mode": "dev"}],
     )
 
-    store.add_to_hydra_store()
+    store.add_to_hydra_store(overwrite_ok=True)
 
     zen(execute_workflow).hydra_main(
+        config_path=None,
         config_name="execute_workflow",
         version_base="1.3",
-        config_path=None,
     )
 
 
 if __name__ == "__main__":
     """
-    This script executes a Flyte workflow configured with hydra-zen. > flytezen
-    --help.
+    This script executes a Flyte workflow configured with hydra-zen.
+    > flytezen --help.
+
+    == Configuration groups ==
+    First override default group values (group=option)
+
+    entity_config: example_wf, lrwine_training_workflow
+    execution_context: dev, local, prod
+
 
     == Config ==
-    Override anything in the config (foo.bar=value)
+    Then override any element in the config (foo.bar=value)
 
-    _target_: flytezen.cli.execute.execute_workflow
-    zen_cfg: ???
-    name: training_workflow
-    package_path: src
-    import_path: flytezen.workflows.lrwine
-    project: flytesnacks
-    domain: development
-    wait: true
-    mode:
-      _target_: flytezen.cli.execute.ExecutionMode
-      name: DEV
+    execution_context:
+      _target_: flytezen.cli.execute.ExecutionContext
+      mode: dev
       image: localhost:30000/flytezen
       tag: main
       version: flytezen-main-16323b3-dev-a8x
-    inputs:
-      logistic_regression:
-        _target_: sklearn.linear_model._logistic.LogisticRegression
-        penalty: l2
-        dual: false
-        tol: 0.0001
-        C: 1.0
-        fit_intercept: true
-        intercept_scaling: 1
-        class_weight: null
-        random_state: null
-        solver: lbfgs
-        max_iter: 100
-        multi_class: auto
-        verbose: 0
-        warm_start: false
-        n_jobs: null
-        l1_ratio: null
+      name: training_workflow
+      package_path: src
+      import_path: flytezen.workflows
+      project: flytesnacks
+      domain: development
+      wait: true
+    entity_config:
+      _target_: flytezen.cli.execution_utils.EntityConfig
+      inputs:
+        logistic_regression:
+          _target_: flytezen.workflows.lrwine.LogisticRegressionInterface
+          penalty: l2
+          dual: false
+          tol: 0.0001
+          C: 1.0
+          fit_intercept: true
+          intercept_scaling: 1
+          class_weight: null
+          random_state: null
+          solver: lbfgs
+          max_iter: 100
+          multi_class: auto
+          verbose: 0
+          warm_start: false
+          n_jobs: null
+          l1_ratio: null
+      module_name: lrwine
+      entity_name: training_workflow
+      entity_type: PythonFunctionWorkflow
 
     Example usage:
         > flytezen -h
+        > flytezen
         > flytezen \
-            inputs.logistic_regression.C=0.4 \
-            inputs.logistic_regression.max_iter=1200
+            execution_context=dev \
+            entity_config=lrwine_training_workflow
         > flytezen \
-            --multirun inputs.logistic_regression.C=0.2,0.5
+            entity_config.inputs.logistic_regression.C=0.4 \
+            entity_config.inputs.logistic_regression.max_iter=1200
+        > flytezen \
+            --multirun entity_config.inputs.logistic_regression.C=0.2,0.5
 
         See the the hydra config output in the git-ignored `./outputs` or
         `./multirun` directories. These are also stored as an artifact of
