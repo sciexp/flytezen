@@ -54,9 +54,6 @@ class ExecutionMode(str, Enum):
         short SHA.
     """
 
-    # LOCAL = 1
-    # DEV = 2
-    # PROD = 3
     LOCAL = "local"
     DEV = "dev"
     PROD = "prod"
@@ -82,7 +79,7 @@ class ExecutionContext:
         version (str): A string representing the version of the workflow, typically including a commit hash or other identifiers.
     """
 
-    # name: ExecutionMode = ExecutionMode.DEV
+    # mode: ExecutionMode = ExecutionMode.DEV
     mode: str = "dev"
     image: str = "ghcr.io/sciexp/flytezen"
     tag: str = "main"
@@ -97,16 +94,7 @@ class ExecutionContext:
 def execute_workflow(
     zen_cfg: DictConfig,
     execution_context: ExecutionContext,
-    # name: str = "training_workflow",
-    # inputs: Dict[str, Any] = {},
     entity_config: EntityConfig,
-    # entities: EntityConfigs,
-    # entities: Dict[str, Any],
-    # package_path: str = "src",
-    # import_path: str = "flytezen.workflows.lrwine",
-    # project: str = "flytesnacks",
-    # domain: str = "development",
-    # wait: bool = True,
 ) -> None:
     """
     Executes the given workflow based on the Hydra configuration. The execution
@@ -115,7 +103,7 @@ def execute_workflow(
     details including the execution environment name (local, dev, prod),
     container image details, and versioning information.
 
-    The 'mode' parameter allows for the following execution environments:
+    The 'execution_context.mode' parameter allows for the following execution environments:
     - LOCAL: Attempts to execute the workflow locally without registering it on
       the remote.
     - DEV: Executes a copy of the local workflow on the remote for development
@@ -138,19 +126,14 @@ def execute_workflow(
 
     Args:
         zen_cfg (DictConfig): Configuration for the execution.
-        package_path (str): The path to the workflow package.
-        import_path (str): The import path of the workflow function to execute.
-        name (str): The name of the workflow function to execute.
-        project (str): The Flyte project in which to register or execute the workflow.
-        domain (str): The Flyte domain in which to register or execute the workflow.
-        wait (bool): Flag indicating whether to wait for the workflow execution to complete.
-        mode (ExecutionContext): An instance of ExecutionContext specifying the execution environment and settings.
-        inputs (Dict[str, Any]): Inputs to the workflow function. Keys are argument names, values are the inputs.
+        execution_context (ExecutionContext): An instance of ExecutionContext specifying the execution settings.
+        entity_config (EntityConfig): Configuration for the workflow entity, including the workflow function and its inputs.
 
-        TODO: Dynamic configuration of `inputs` argument should be required, but it is placed
-        at the bottom due to the length in printing the config.
-        The parameters should be reorderd in hydra/to_yaml and this can then be moved
-        to the top of the arg list and made required.
+        Additional dynamic inputs for the workflow are generated based on the
+        entity configuration. These inputs are determined by inspecting the
+        signature of the workflow entity and are configured to be compatible
+        with dataclass_json and hydra_zen, ensuring proper instantiation and
+        configuration of custom types.
 
     Raises:
         Sets exit status one if an invalid execution mode is specified.
@@ -336,17 +319,20 @@ def main() -> None:
         version=f"{repo_name}-{git_branch}-{git_short_sha}",
     )
 
-    # Define the [execution] execution_context store
+    # define the execution_context store
     execution_context_store = store(group="execution_context")
     execution_context_store(local_execution_context, name="local")
     execution_context_store(dev_execution_context, name="dev")
     execution_context_store(prod_execution_context, name="prod")
 
-    # Define the entity store
+    # define the entity_config store
     entity_config_store = store(group="entity_config")
 
-    # The parent module whose submodules you want to iterate over
-    parent_module_path = "flytezen.workflows"
+    # specify the parent module whose submodules will be inspected for workflows
+    parent_module_path = os.environ.get(
+        "WORKFLOW_PARENT_MODULE_PATH",
+        "flytezen.workflows"
+    )
     generate_entity_configs(parent_module_path, entity_config_store, logger)
 
     hydra_defaults = [
@@ -354,22 +340,7 @@ def main() -> None:
         {"execution_context": "dev"},
         {"entity_config": "lrwine_training_workflow"},
     ]
-    # for name, entity in entities.items():
-    #     hydra_defaults.append({f"entities.{name}": "base"})
-    logger.info(f"hydra_defaults: {hydra_defaults}")
-    # hydra_defaults.append("_self_")
-
-    # default_entity_name = "lrwine_training_workflow"
-    # default_entity = entities[default_entity_name]
-
-    # store(
-    #     execute_workflow,
-    #     mode=dev_mode,
-    #     # entity=default_entity,
-    #     entities=entities,
-    #     name="execute_workflow",
-    #     hydra_defaults=hydra_defaults,
-    # )
+    logger.debug(f"hydra_defaults: {hydra_defaults}")
 
     store(
         make_config(
