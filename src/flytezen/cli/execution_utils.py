@@ -224,10 +224,10 @@ def generate_hydra_config() -> HydraConf:
                 """
                 You can test CLI configuration overrides after `-c job`, e.g.:
 
-                  * `${hydra.help.app_name} -c job mode=prod`
-                  * `${hydra.help.app_name} -c job name=wf import_path=${hydra.help.app_name}.workflows.example`
-                  # This example will fail if you set a workflow with different inputs.
-                  * `${hydra.help.app_name} -c job inputs.logistic_regression.penalty=l1`
+                  * `${hydra.help.app_name} -c job execution_context=prod`
+                  * `${hydra.help.app_name} -c job entity_config==example_wf`
+                  # This example will fail if you specify an entity_config with different inputs.
+                  * `${hydra.help.app_name} -c job entity_config.inputs.logistic_regression.max_iter=1200`
 
                 This will generate `== Config ==` above resolved in context of the command line overrides.
                 Removing the `-c job` flag will execute the workflow with the specified configuration.
