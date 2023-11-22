@@ -1,21 +1,129 @@
+import importlib
+import inspect
 import logging
 import os
+import pkgutil
 import queue
 import secrets
 import subprocess
 import sys
 import threading
 import time
+from dataclasses import dataclass
 from datetime import timedelta
 from textwrap import dedent
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
+from dataclasses_json import dataclass_json
 from flytekit import WorkflowExecutionPhase
+from flytekit.core.base_task import PythonTask
+from flytekit.core.workflow import WorkflowBase
 from flytekit.exceptions.system import FlyteSystemException
 from flytekit.exceptions.user import FlyteTimeout
 from flytekit.remote import FlyteRemote
 from flytekit.remote.executions import FlyteWorkflowExecution
 from hydra.conf import HelpConf, HydraConf, JobConf
+from hydra_zen import ZenStore, make_custom_builds_fn
+from omegaconf import MISSING
+
+
+@dataclass_json
+@dataclass
+class EntityConfig:
+    inputs: Dict[str, Any] = MISSING
+    module_name: str = "lrwine"
+    entity_name: str = "training_workflow"
+    entity_type: str = "WorkflowBase"
+
+
+# @dataclass_json
+# @dataclass
+# class EntityConfigs:
+#     entities: Dict[str, Any] = MISSING
+
+
+builds = make_custom_builds_fn(populate_full_signature=True)
+
+
+def generate_entity_configs(
+    parent_module_path: str, entity_store: ZenStore, logger: logging.Logger
+) -> None:
+    parent_module = importlib.import_module(parent_module_path)
+
+    # Define the type union
+    EntityTypes = Union[WorkflowBase, PythonTask]
+
+    entities = {}
+
+    # Iterate over all submodules in the parent module
+    for submodule_info in pkgutil.iter_modules(
+        parent_module.__path__, parent_module.__name__ + "."
+    ):
+        # import submodule
+        logger.debug(f"Checking submodule: {submodule_info.name}")
+        submodule = importlib.import_module(submodule_info.name)
+
+        # iterate over entities in the submodule
+        for entity_name in dir(submodule):
+            logger.debug(f"Checking entity: {entity_name}")
+            entity = getattr(submodule, entity_name)
+
+            # Check if the entity is an instance of WorkflowBase or PythonTask
+            # if isinstance(entity, EntityTypes.__args__):
+            if isinstance(entity, WorkflowBase):
+                # Construct an instance (or a configuration) of the entity
+                module_name = submodule_info.name.split(".")[-1]
+                entity_inputs = generate_entity_inputs(entity)
+                entity_instance = builds(
+                    EntityConfig,
+                    inputs=entity_inputs,
+                    module_name=module_name,
+                    entity_name=entity_name,
+                    entity_type=type(entity).__name__,
+                )
+
+                # Store the entity instance in a group with a composed name
+                composed_name = module_name + "_" + entity_name
+                # entity_store = store(group=composed_name)
+                # entity_store(entity_instance, name="base")
+                entity_store(entity_instance, name=composed_name)
+                logger.debug(f"Stored entity: {composed_name}")
+                # entities[composed_name] = entity_instance
+    # return EntityConfigs(entities=entities)
+    # return entities
+
+
+def generate_entity_inputs(
+    # workflow_import_path: str = "flytezen.workflows.lrwine",
+    # workflow_name: str = "training_workflow",
+    entity: Union[WorkflowBase, PythonTask],
+) -> Dict[str, Any]:
+    # module = importlib.import_module(workflow_import_path)
+    # workflow = getattr(module, workflow_name)
+
+    # if not callable(workflow):
+    #     value_error_message = f"Workflow '{workflow_name}' is not callable"
+    #     raise ValueError(value_error_message)
+
+    inputs = {}
+
+    for name, param in inspect.signature(entity).parameters.items():
+        param_type = param.annotation
+        default = param.default
+
+        # Check if the type is a built-in type (like int, str, etc.)
+        if isinstance(param_type, type) and param_type.__module__ == "builtins":
+            inputs[name] = default
+        else:
+            # Dynamically import the type if it's not a built-in type
+            type_module = importlib.import_module(param_type.__module__)
+            custom_type = getattr(type_module, param_type.__name__)
+
+            # CustomTypeConf = builds(custom_type)
+            # inputs[name] = CustomTypeConf()
+            inputs[name] = builds(custom_type)
+
+    return inputs
 
 
 def random_alphanumeric_suffix(input_string: str = "", length: int = 3) -> str:
