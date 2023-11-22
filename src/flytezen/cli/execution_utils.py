@@ -84,13 +84,8 @@ def generate_entity_configs(
 
                 # Store the entity instance in a group with a composed name
                 composed_name = module_name + "_" + entity_name
-                # entity_store = store(group=composed_name)
-                # entity_store(entity_instance, name="base")
                 entity_store(entity_instance, name=composed_name)
                 logger.debug(f"Stored entity: {composed_name}")
-                # entities[composed_name] = entity_instance
-    # return EntityConfigs(entities=entities)
-    # return entities
 
 
 def generate_entity_inputs(
