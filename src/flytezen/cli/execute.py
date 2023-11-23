@@ -240,16 +240,14 @@ def generate_workflow_inputs(
         param_type = param.annotation
         default = param.default
 
-        # Check if the type is a built-in type (like int, str, etc.)
+        # check if the type is a built-in type (like int, str, etc.)
         if isinstance(param_type, type) and param_type.__module__ == "builtins":
             inputs[name] = default
         else:
-            # Dynamically import the type if it's not a built-in type
+            # dynamically import the type if it's not a built-in type
             type_module = importlib.import_module(param_type.__module__)
             custom_type = getattr(type_module, param_type.__name__)
 
-            # CustomTypeConf = builds(custom_type)
-            # inputs[name] = CustomTypeConf()
             inputs[name] = builds(custom_type)
 
     return inputs
