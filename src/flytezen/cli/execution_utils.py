@@ -14,7 +14,7 @@ from datetime import timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Tuple, Union
 
-from dataclasses_json import dataclass_json
+from dataclasses_json import DataClassJsonMixin, dataclass_json
 from flytekit import WorkflowExecutionPhase
 from flytekit.core.base_task import PythonTask
 from flytekit.core.workflow import WorkflowBase
@@ -24,13 +24,12 @@ from flytekit.remote import FlyteRemote
 from flytekit.remote.executions import FlyteWorkflowExecution
 from hydra.conf import HelpConf, HydraConf, JobConf
 from hydra_zen import ZenStore, make_custom_builds_fn
-from omegaconf import MISSING
 
 
 @dataclass_json
 @dataclass
 class EntityConfig:
-    inputs: Dict[str, Any] = MISSING
+    inputs: Dict[str, Any]
     module_name: str = "lrwine"
     entity_name: str = "training_workflow"
     entity_type: str = "WorkflowBase"
@@ -52,13 +51,17 @@ def generate_entity_configs(
     EntityTypes = Union[WorkflowBase, PythonTask]
 
     # iterate over submodules in the parent module
-    for submodule_info in pkgutil.iter_modules(parent_module.__path__, parent_module.__name__ + "."):
+    for submodule_info in pkgutil.iter_modules(
+        parent_module.__path__, parent_module.__name__ + "."
+    ):
         # Import the submodule
         submodule = importlib.import_module(submodule_info.name)
         logger.debug(f"Checking submodule: {submodule_info.name}")
 
         # use inspect.getmembers to directly get entities that are instances of EntityTypes
-        entities = inspect.getmembers(submodule, lambda member: isinstance(member, WorkflowBase))
+        entities = inspect.getmembers(
+            submodule, lambda member: isinstance(member, WorkflowBase)
+        )
 
         for entity_name, entity in entities:
             logger.debug(f"Found entity: {entity_name}")
@@ -98,13 +101,17 @@ def generate_entity_inputs(
         param_type = param.annotation
         default = param.default
 
-        # Check if the type is a built-in type (like int, str, etc.)
+        # check if the type is a built-in type
         if isinstance(param_type, type) and param_type.__module__ == "builtins":
             inputs[name] = default
         else:
-            # Dynamically import the type if it's not a built-in type
+            # dynamically import the type if it's not a built-in type
             type_module = importlib.import_module(param_type.__module__)
             custom_type = getattr(type_module, param_type.__name__)
+
+            if issubclass(custom_type, DataClassJsonMixin):
+                pass
+                # inputs[name] = just(custom_type)
 
             # CustomTypeConf = builds(custom_type)
             # inputs[name] = CustomTypeConf()
