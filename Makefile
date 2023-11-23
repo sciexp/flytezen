@@ -156,7 +156,7 @@ run_help: ## Print hydra help for execute script.
 # Capture additional arguments to pass to hydra-zen cli
 # converting them to make do-nothing targets
 # supports passing hydra overrides as ARGS, e.g.:
-#   make run HYDRA_OVERRIDES="inputs.logistic_regression.max_iter=2000 mode=local"
+#   make run HYDRA_OVERRIDES="inputs.logistic_regression.max_iter=2000 execution_context=local"
 HYDRA_OVERRIDES = $(filter-out $@,$(MAKECMDGOALS))
 %:
 	@:
@@ -166,10 +166,10 @@ run: ## Run registered workflow (sync).
 	poetry run flytezen $(HYDRA_OVERRIDES)
 
 run_prod: ## Run registered workflow (sync).
-	poetry run flytezen mode=prod $(HYDRA_OVERRIDES)
+	poetry run flytezen execution_context=prod $(HYDRA_OVERRIDES)
 
 run_local: ## Run registered workflow (sync).
-	poetry run flytezen mode=local $(HYDRA_OVERRIDES)
+	poetry run flytezen execution_context=local $(HYDRA_OVERRIDES)
 
 multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
 	poetry run flytezen --multirun workflow.hyperparameters.C=0.2,0.5
