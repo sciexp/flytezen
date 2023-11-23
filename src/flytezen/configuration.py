@@ -1,14 +1,127 @@
+import dataclasses
 import inspect
 import sys
 from dataclasses import field
-from typing import Any, Callable, Dict, Optional, Type, get_type_hints
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    get_type_hints,
+)
+
+from mashumaro.mixins.json import DataClassJSONMixin
+from sklearn.linear_model import LogisticRegression
+
+
+def infer_type_from_default(value: Any) -> Type:
+    """
+    Infers or imputes a type from the default value of a parameter.
+    Args:
+        value: The default value of the parameter.
+    Returns:
+        The inferred type.
+    """
+    if value is None:
+        return Optional[Any]
+    elif value is inspect.Parameter.empty:
+        return Any
+    else:
+        return type(value)
+
+
+def create_dataclass_from_callable(
+    callable_obj: Callable,
+    overrides: Optional[Dict[str, Tuple[Type, Any]]] = None,
+) -> List[Tuple[str, Type, Any]]:
+    """
+    Creates the fields of a dataclass from a `Callable` that includes all
+    parameters of the callable as typed fields with default values inferred or
+    taken from type hints. The function also accepts a dictionary containing
+    parameter names together with a tuple of a type and default to allow
+    specification of or override (un)typed defaults from the target callable.
+
+    Args:
+        callable_obj (Callable): The callable object to create a dataclass from.
+        overrides (Optional[Dict[str, Tuple[Type, Any]]]): Dictionary to
+        override inferred types and default values. Each dict value is a tuple
+        (Type, default_value).
+
+    Returns:
+        Fields that can be used to construct a new dataclass type that
+        represents the interface of the callable.
+
+    Examples:
+        >>> from pprint import pprint
+        >>> custom_types_defaults: Dict[str, Tuple[Type, Any]] = {
+        ...     "penalty": (str, "l2"),
+        ...     "class_weight": (Optional[dict], None),
+        ...     "random_state": (Optional[int], None),
+        ...     "max_iter": (int, 2000),
+        ...     "n_jobs": (Optional[int], None),
+        ...     "l1_ratio": (Optional[float], None),
+        ... }
+        >>> fields = create_dataclass_from_callable(LogisticRegression, custom_types_defaults)
+        >>> LogisticRegressionInterface = dataclasses.make_dataclass(
+        ...     "LogisticRegressionInterface", fields, bases=(DataClassJSONMixin,)
+        ... )
+        >>> lr_instance = LogisticRegressionInterface()
+        >>> isinstance(lr_instance, DataClassJSONMixin)
+        True
+        >>> pprint(lr_instance)
+        LogisticRegressionInterface(penalty='l2',
+                                    dual=False,
+                                    tol=0.0001,
+                                    C=1.0,
+                                    fit_intercept=True,
+                                    intercept_scaling=1,
+                                    class_weight=None,
+                                    random_state=None,
+                                    solver='lbfgs',
+                                    max_iter=2000,
+                                    multi_class='auto',
+                                    verbose=0,
+                                    warm_start=False,
+                                    n_jobs=None,
+                                    l1_ratio=None)
+    """
+    if inspect.isclass(callable_obj):
+        func = callable_obj.__init__
+    else:
+        func = callable_obj
+
+    signature = inspect.signature(func)
+    type_hints = get_type_hints(func)
+
+    fields = []
+    for name, param in signature.parameters.items():
+        if name == "self":
+            continue
+
+        if overrides and name in overrides:
+            field_type, default_value = overrides[name]
+        else:
+            inferred_type = infer_type_from_default(param.default)
+            field_type = type_hints.get(name, inferred_type)
+            default_value = (
+                param.default
+                if param.default is not inspect.Parameter.empty
+                else dataclasses.field(default_factory=lambda: None)
+            )
+
+        fields.append((name, field_type, default_value))
+
+    return fields
 
 
 class TypeInferenceError(Exception):
     pass
 
 
-def infer_type_from_default(
+def infer_type_from_default_json(
     default: Any, name: str, custom_types: Optional[Dict[str, Type]] = None
 ) -> Type:
     """
@@ -27,13 +140,13 @@ def infer_type_from_default(
         TypeInferenceError: If the type cannot be inferred and is not provided in custom_types.
 
     Examples:
-        >>> infer_type_from_default(5, "example_int")
+        >>> infer_type_from_default_json(5, "example_int")
         <class 'int'>
-        >>> infer_type_from_default(True, "example_bool")
+        >>> infer_type_from_default_json(True, "example_bool")
         <class 'bool'>
-        >>> infer_type_from_default("example", "example_str")
+        >>> infer_type_from_default_json("example", "example_str")
         <class 'str'>
-        >>> infer_type_from_default(None, "example_none")  # Raises an exception
+        >>> infer_type_from_default_json(None, "example_none")  # Raises an exception
         Traceback (most recent call last):
         ...
         flytezen.configuration.TypeInferenceError: Type for parameter 'example_none' with default value None cannot be inferred.
@@ -79,7 +192,7 @@ def infer_type_from_default(
         raise TypeInferenceError(type_inference_error_message)
 
 
-def create_dataclass_from_callable(
+def create_dataclass_from_callable_json(
     callable_obj: Callable, custom_types: Optional[Dict[str, Type]] = None
 ) -> Type:
     """
@@ -107,7 +220,7 @@ def create_dataclass_from_callable(
         ...     "n_jobs": Optional[int],
         ...     "l1_ratio": Optional[float],
         ... }
-        >>> BaseLogisticRegressionInterface = create_dataclass_from_callable(
+        >>> BaseLogisticRegressionInterface = create_dataclass_from_callable_json(
         ...     LogisticRegression, logistic_regression_custom_types
         ... )
         >>> hasattr(BaseLogisticRegressionInterface, 'fit_intercept')
@@ -124,7 +237,7 @@ def create_dataclass_from_callable(
         # Using decorators without extending the base class
         >>> @dataclass_json
         ... @dataclass
-        ... class LogisticRegressionInterface(create_dataclass_from_callable(
+        ... class LogisticRegressionInterface(create_dataclass_from_callable_json(
         ...     LogisticRegression, logistic_regression_custom_types)):
         ...     pass
         >>> hasattr(LogisticRegressionInterface, 'fit_intercept')
@@ -135,7 +248,7 @@ def create_dataclass_from_callable(
         ...     pass
         >>> example_func_custom_types = {"b": str}
         >>> ExampleFuncInterface = dataclass_json(
-        ...     dataclass(create_dataclass_from_callable(
+        ...     dataclass(create_dataclass_from_callable_json(
         ...     example_func, example_func_custom_types
         ...     ))
         ... )
@@ -147,7 +260,7 @@ def create_dataclass_from_callable(
         ...     pass
         >>> example_func_custom_types = {"a": int, "b": str,}
         >>> ExampleFuncInterface = dataclass_json(
-        ...     dataclass(create_dataclass_from_callable(
+        ...     dataclass(create_dataclass_from_callable_json(
         ...     example_func, example_func_custom_types
         ...     ))
         ... )
@@ -173,7 +286,8 @@ def create_dataclass_from_callable(
 
         try:
             field_type = type_hints.get(
-                name, infer_type_from_default(param.default, name, custom_types)
+                name,
+                infer_type_from_default_json(param.default, name, custom_types),
             )
         except TypeInferenceError as e:
             raise TypeInferenceError(str(e)) from e
@@ -197,10 +311,39 @@ def create_dataclass_from_callable(
 
 
 if __name__ == "__main__":
-    pass
     # Commented code here is primarily to support CLI or IDE debugger execution.
     # Otherwise, prefer to integrate tests and checks into the docstrings and
     # run pytest with `--xdoc` (default in this project).
+
+    import pprint
+
+    custom_types_defaults: Dict[str, Tuple[Type, Any]] = {
+        # "penalty": (str, "l2"),
+        # "dual": (bool, False),
+        # "tol": (float, 1e-4),
+        # "C": (float, 1.0),
+        # "fit_intercept": (bool, True),
+        # "intercept_scaling": (int, 1),
+        # "class_weight": (Optional[dict], None),
+        # "random_state": (Optional[int], None),
+        # "solver": (str, "lbfgs"),
+        "max_iter": (int, 2000),
+        # "multi_class": (str, "auto"),
+        # "verbose": (int, 0),
+        # "warm_start": (bool, False),
+        # "n_jobs": (Optional[int], None),
+        # "l1_ratio": (Optional[float], None),
+    }
+
+    fields = create_dataclass_from_callable(
+        LogisticRegression,
+        custom_types_defaults,
+        # {},
+    )
+    LogisticRegressionInterface = dataclasses.make_dataclass(
+        "LogisticRegressionInterface", fields, bases=(DataClassJSONMixin,)
+    )
+    pprint.pprint(LogisticRegressionInterface())
 
     # from dataclasses import dataclass
     # from dataclasses_json import dataclass_json
@@ -214,7 +357,7 @@ if __name__ == "__main__":
     # }
     # LogisticRegressionInterface = dataclass_json(
     #     dataclass(
-    #         create_dataclass_from_callable(
+    #         create_dataclass_from_callable_json(
     #             LogisticRegression, logistic_regression_custom_types
     #         )
     #     )
