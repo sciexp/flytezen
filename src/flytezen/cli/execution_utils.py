@@ -14,7 +14,7 @@ from datetime import timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Tuple, Union
 
-from dataclasses_json import DataClassJsonMixin, dataclass_json
+from dataclasses_json import dataclass_json
 from flytekit import WorkflowExecutionPhase
 from flytekit.core.base_task import PythonTask
 from flytekit.core.workflow import WorkflowBase
@@ -23,7 +23,7 @@ from flytekit.exceptions.user import FlyteTimeout
 from flytekit.remote import FlyteRemote
 from flytekit.remote.executions import FlyteWorkflowExecution
 from hydra.conf import HelpConf, HydraConf, JobConf
-from hydra_zen import ZenStore, make_custom_builds_fn
+from hydra_zen import ZenStore, builds, make_custom_builds_fn
 
 
 @dataclass_json
@@ -41,12 +41,33 @@ class EntityConfig:
 #     entities: Dict[str, Any] = MISSING
 
 
-builds = make_custom_builds_fn(populate_full_signature=True)
+fbuilds = make_custom_builds_fn(populate_full_signature=True)
 
 
 def generate_entity_configs(
     parent_module_path: str, entity_store: ZenStore, logger: logging.Logger
 ) -> None:
+    """
+    Generates and stores configurations for entities found in a specified
+    module.
+
+    This function iterates over all submodules in the parent module defined by
+    `parent_module_path`. For each submodule, it looks for entities that are
+    instances of either `WorkflowBase` or `PythonTask` and generates
+    configurations for them using `EntityConfig`. These configurations are then
+    stored in `entity_store`.
+
+    Args:
+        parent_module_path (str): The import path of the parent module to search
+        for entities.
+        entity_store (ZenStore): The store where generated entity configurations
+        will be kept.
+        logger (logging.Logger): Logger for debugging and logging information.
+
+    Returns:
+        None: The function does not return anything. It populates the
+        `entity_store` with configurations for each entity of type EntityTypes.
+    """
     parent_module = importlib.import_module(parent_module_path)
     EntityTypes = Union[WorkflowBase, PythonTask]
 
@@ -54,11 +75,11 @@ def generate_entity_configs(
     for submodule_info in pkgutil.iter_modules(
         parent_module.__path__, parent_module.__name__ + "."
     ):
-        # Import the submodule
+        # import the submodule
         submodule = importlib.import_module(submodule_info.name)
         logger.debug(f"Checking submodule: {submodule_info.name}")
 
-        # use inspect.getmembers to directly get entities that are instances of EntityTypes
+        # import entities that are instances of EntityTypes
         entities = inspect.getmembers(
             submodule, lambda member: isinstance(member, WorkflowBase)
         )
@@ -69,9 +90,9 @@ def generate_entity_configs(
             # construct an instance (or a configuration) of the entity
             module_name = submodule_info.name.split(".")[-1]
             entity_inputs = generate_entity_inputs(entity)
-            entity_instance = builds(
+            entity_instance = fbuilds(
                 EntityConfig,
-                inputs=entity_inputs,
+                inputs=builds(dict, entity_inputs, hydra_convert="all"),
                 module_name=module_name,
                 entity_name=entity_name,
                 entity_type=type(entity).__name__,
@@ -84,17 +105,26 @@ def generate_entity_configs(
 
 
 def generate_entity_inputs(
-    # workflow_import_path: str = "flytezen.workflows.lrwine",
-    # workflow_name: str = "training_workflow",
     entity: Union[WorkflowBase, PythonTask],
 ) -> Dict[str, Any]:
-    # module = importlib.import_module(workflow_import_path)
-    # workflow = getattr(module, workflow_name)
+    """
+    Generates a dictionary of inputs for a given entity.
 
-    # if not callable(workflow):
-    #     value_error_message = f"Workflow '{workflow_name}' is not callable"
-    #     raise ValueError(value_error_message)
+    This function inspects the signature of the provided `entity`, which can be
+    either a `WorkflowBase` or a `PythonTask`. For each parameter in the
+    signature, it determines the type and default value (if any). If the type is
+    a built-in type, it directly uses the default value. For custom types, it
+    dynamically imports and constructs a configuration object using `fbuilds`.
 
+    Args:
+        entity (Union[WorkflowBase, PythonTask]): The entity for which to
+        generate input configurations.
+
+    Returns:
+        Dict[str, Any]: A dictionary with keys that are the names of the entity
+        inputs and values hydra-zen configurations that will build their
+        respective default values.
+    """
     inputs = {}
 
     for name, param in inspect.signature(entity).parameters.items():
@@ -109,13 +139,7 @@ def generate_entity_inputs(
             type_module = importlib.import_module(param_type.__module__)
             custom_type = getattr(type_module, param_type.__name__)
 
-            if issubclass(custom_type, DataClassJsonMixin):
-                pass
-                # inputs[name] = just(custom_type)
-
-            # CustomTypeConf = builds(custom_type)
-            # inputs[name] = CustomTypeConf()
-            inputs[name] = builds(custom_type)
+            inputs[name] = fbuilds(custom_type)
 
     return inputs
 
@@ -174,7 +198,8 @@ def git_info_to_workflow_version(
         for string in [repo_name, git_branch, git_short_sha]:
             if any(char.isupper() for char in string):
                 logger.warning(
-                    f"String '{string}' contains capitalized characters. Converting to lowercase."
+                    f"String '{string}' contains capitalized characters.\n"
+                    "Converting to lowercase."
                 )
 
         return repo_name.lower(), git_branch.lower(), git_short_sha.lower()
