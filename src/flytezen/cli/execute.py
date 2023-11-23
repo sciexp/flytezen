@@ -359,23 +359,26 @@ if __name__ == "__main__":
     entity_config:
       _target_: flytezen.cli.execution_utils.EntityConfig
       inputs:
-        logistic_regression:
-          _target_: flytezen.workflows.lrwine.LogisticRegressionInterface
-          penalty: l2
-          dual: false
-          tol: 0.0001
-          C: 1.0
-          fit_intercept: true
-          intercept_scaling: 1
-          class_weight: null
-          random_state: null
-          solver: lbfgs
-          max_iter: 100
-          multi_class: auto
-          verbose: 0
-          warm_start: false
-          n_jobs: null
-          l1_ratio: null
+        _target_: builtins.dict
+        _convert_: all
+        _args_:
+        - logistic_regression:
+            _target_: flytezen.workflows.lrwine.LogisticRegressionInterface
+            penalty: l2
+            dual: false
+            tol: 0.0001
+            C: 1.0
+            fit_intercept: true
+            intercept_scaling: 1
+            class_weight: null
+            random_state: null
+            solver: lbfgs
+            max_iter: 100
+            multi_class: auto
+            verbose: 0
+            warm_start: false
+            n_jobs: null
+            l1_ratio: null
       module_name: lrwine
       entity_name: training_workflow
       entity_type: PythonFunctionWorkflow
