@@ -54,7 +54,7 @@ def process_data(data: pd.DataFrame) -> pd.DataFrame:
 def train_model(
     data: pd.DataFrame, logistic_regression: LogisticRegressionInterface
 ) -> str:
-# ) -> LogisticRegression:
+    # ) -> LogisticRegression:
     """
     Train a model on the wine dataset.
     """
@@ -76,7 +76,7 @@ def training_workflow(
         max_iter=2000
     ),
 ) -> str:
-# ) -> LogisticRegression:
+    # ) -> LogisticRegression:
     """
     Put all of the steps together into a single workflow.
     """
