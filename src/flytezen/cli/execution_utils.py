@@ -353,3 +353,41 @@ def wait_for_workflow_completion(
             )
 
         sys.exit()
+
+
+# -----------
+# DEPRECATED
+# -----------
+
+
+def generate_workflow_inputs(
+    workflow_import_path: str = "flytezen.workflows.lrwine",
+    workflow_name: str = "training_workflow",
+) -> Dict[str, Any]:
+    """
+    Deprecated in favor of `generate_entity_inputs`.
+    """
+    module = importlib.import_module(workflow_import_path)
+    workflow = getattr(module, workflow_name)
+
+    if not callable(workflow):
+        value_error_message = f"Workflow '{workflow_name}' is not callable"
+        raise ValueError(value_error_message)
+
+    inputs = {}
+
+    for name, param in inspect.signature(workflow).parameters.items():
+        param_type = param.annotation
+        default = param.default
+
+        # check if the type is a built-in type (like int, str, etc.)
+        if isinstance(param_type, type) and param_type.__module__ == "builtins":
+            inputs[name] = default
+        else:
+            # dynamically import the type if it's not a built-in type
+            type_module = importlib.import_module(param_type.__module__)
+            custom_type = getattr(type_module, param_type.__name__)
+
+            inputs[name] = builds(custom_type)
+
+    return inputs
