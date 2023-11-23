@@ -5016,4 +5016,4 @@ test = ["pytest", "pytest-asyncio", "pytest-cov", "xdoctest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "d5d289d328d2253c1fc497e1b5d36609f54b82ff85684786522d89c5ca6e4d6b"
+content-hash = "9806f342428d114179183b4709f850330657ae0fb264f1d4721bc41506566168"
