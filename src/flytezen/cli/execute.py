@@ -330,8 +330,7 @@ def main() -> None:
 
     # specify the parent module whose submodules will be inspected for workflows
     parent_module_path = os.environ.get(
-        "WORKFLOW_PARENT_MODULE_PATH",
-        "flytezen.workflows"
+        "WORKFLOW_PARENT_MODULE_PATH", "flytezen.workflows"
     )
     generate_entity_configs(parent_module_path, entity_config_store, logger)
 
@@ -342,16 +341,14 @@ def main() -> None:
     ]
     logger.debug(f"hydra_defaults: {hydra_defaults}")
 
+    ExecuteWorkflowConf = make_config(
+        hydra_defaults=hydra_defaults,
+        execution_context=None,
+        entity_config=None,
+    )
+
     store(
-        make_config(
-            hydra_defaults=[
-                "_self_",
-                {"execution_context": "dev"},
-                {"entity_config": "lrwine_training_workflow"},
-            ],
-            execution_context=None,
-            entity_config=None,
-        ),
+        ExecuteWorkflowConf,
         name="execute_workflow",
     )
 
