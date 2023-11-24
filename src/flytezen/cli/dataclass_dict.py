@@ -6,7 +6,7 @@ from dataclasses_json import dataclass_json
 from hydra_zen import builds, instantiate
 from sklearn.linear_model import LogisticRegression
 
-from flytezen.configuration import create_dataclass_from_callable
+from flytezen.configuration import create_dataclass_from_callable_json
 from flytezen.logging import configure_logging
 
 logger = configure_logging("dataclass_dict")
@@ -21,7 +21,7 @@ logistic_regression_custom_types: Dict[str, Type[Optional[Any]]] = {
 
 LogisticRegressionInterface = dataclass_json(
     dataclass(
-        create_dataclass_from_callable(
+        create_dataclass_from_callable_json(
             LogisticRegression, logistic_regression_custom_types
         )
     )
