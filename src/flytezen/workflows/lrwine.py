@@ -4,8 +4,10 @@ from typing import Any, Dict, Optional, Tuple, Type
 
 import joblib
 import pandas as pd
+
+# from mashumaro.mixins.json import DataClassJSONMixin
+from dataclasses_json import DataClassJsonMixin as DataClassJSONMixin
 from flytekit import task, workflow
-from mashumaro.mixins.json import DataClassJSONMixin
 from sklearn.datasets import load_wine
 from sklearn.linear_model import LogisticRegression
 
