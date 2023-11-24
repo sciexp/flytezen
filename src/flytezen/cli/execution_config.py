@@ -1,23 +1,20 @@
 """
-Constructs configurations for each leaf node in the supported
+Constructs configurations for each leaf node marked with a `#` in the supported
 execution config tree:
 
     execution_config = {
         "LOCAL": {
-            "SHELL": "LOCAL_SHELL",
+            "SHELL": "LOCAL_SHELL", #
             "CLUSTER": {
-                "DEV": "LOCAL_CLUSTER_DEV",
-                "PROD": "LOCAL_CLUSTER_PROD"
+                "DEV": "LOCAL_CLUSTER_DEV", #
+                "PROD": "LOCAL_CLUSTER_PROD" #
             }
         },
         "REMOTE": {
-            "DEV": "REMOTE_DEV",
-            "PROD": "REMOTE_PROD"
+            "DEV": "REMOTE_DEV", #
+            "PROD": "REMOTE_PROD" #
         }
     }
-
-TODO: See notes on undesirably broad type annotations due to failure of
-type-checking with appropriate annotations at the bottom of this file.
 """
 
 from dataclasses import dataclass, field
@@ -55,7 +52,7 @@ class LocalConfig:
 @dataclass
 class ExecutionMode:
     location: ExecutionLocation = field(
-        default_factory=lambda: ExecutionLocation.local
+        default_factory=lambda: ExecutionLocation.remote
     )
     local_config: LocalConfig = field(default_factory=LocalConfig)
     remote_config: ClusterConfig = field(default_factory=ClusterConfig)
@@ -67,14 +64,17 @@ LocalConfigConf = fbuilds(LocalConfig)
 ExecutionModeConf = fbuilds(ExecutionMode)
 
 
+# Default Execution Configuration
+default_execution_config = ExecutionModeConf()
+
 # Local Shell Configuration
 local_shell_config = ExecutionModeConf(
     location=ExecutionLocation.local,
     local_config=LocalConfigConf(
         mode=LocalMode.shell,
-        cluster_config=None,  # not applicable for SHELL mode
+        cluster_config=None,
     ),
-    remote_config=None,  # not applicable for LOCAL location
+    remote_config=None,
 )
 
 # Local Cluster Dev Configuration
@@ -84,7 +84,7 @@ local_cluster_dev_config = ExecutionModeConf(
         mode=LocalMode.cluster,
         cluster_config=ClusterConfigConf(mode=ClusterMode.dev),
     ),
-    remote_config=None,  # not applicable for LOCAL location
+    remote_config=None,
 )
 
 # Local Cluster Prod Configuration
@@ -94,20 +94,20 @@ local_cluster_prod_config = ExecutionModeConf(
         mode=LocalMode.cluster,
         cluster_config=ClusterConfigConf(mode=ClusterMode.prod),
     ),
-    remote_config=None,  # not applicable for LOCAL location
+    remote_config=None,
 )
 
 # Remote Dev Configuration
 remote_dev_config = ExecutionModeConf(
     location=ExecutionLocation.remote,
-    local_config=None,  # not applicable for REMOTE location
+    local_config=None,
     remote_config=ClusterConfigConf(mode=ClusterMode.dev),
 )
 
 # Remote Prod Configuration
 remote_prod_config = ExecutionModeConf(
     location=ExecutionLocation.remote,
-    local_config=None,  # not applicable for REMOTE location
+    local_config=None,
     remote_config=ClusterConfigConf(mode=ClusterMode.prod),
 )
 
@@ -119,55 +119,30 @@ if __name__ == "__main__":
     def ipprint(x):
         pprint(instantiate(x))
 
+    ipprint(default_execution_config)
     ipprint(local_shell_config)
     ipprint(local_cluster_dev_config)
     ipprint(local_cluster_prod_config)
     ipprint(remote_dev_config)
     ipprint(remote_prod_config)
 
+"""
+Permissively typed version of the dataclasses above for debugging purposes
 
-# Correct typing is given below; however, it leads to
-# `Builds_DataClass is not a subclass of Dataclass` in each case
-# @dataclass
-# class ClusterConfig:
-#     mode: ClusterMode = ClusterMode.dev
-
-# @dataclass
-# class LocalConfig:
-#     mode: LocalMode = LocalMode.shell
-#     cluster_config: ClusterConfig = ClusterConfig()
-
-# @dataclass
-# class ExecutionMode:
-#     location: ExecutionLocation = ExecutionLocation.local
-#     local_config: LocalConfig = LocalConfig()
-#     remote_config: ClusterConfig = ClusterConfig()
-
-# from typing import Type, TYPE_CHECKING
-# from typing_extensions import TypeAlias
-# TypeA: TypeAlias = A if TYPE_CHECKING else Any
-# TypeClusterMode: TypeAlias = ClusterMode if TYPE_CHECKING else Any
-# TypeLocalMode: TypeAlias = LocalMode if TYPE_CHECKING else Any
-# TypeExecutionLocation: TypeAlias = ExecutionLocation if TYPE_CHECKING else Any
-# TypeClusterConfig: TypeAlias = ClusterConfig if TYPE_CHECKING else Any
-# TypeLocalConfig: TypeAlias = LocalConfig if TYPE_CHECKING else Any
-# TypeExecutionMode: TypeAlias = ExecutionMode if TYPE_CHECKING else Any
-
-# The type annotations on dataclass fields are undesirably broad
-# See comments at the bottom of this file for more details
-# @dataclass
-# class ClusterConfig:
-#     mode: Any
+@dataclass
+class ClusterConfig:
+    mode: Any
 
 
-# @dataclass
-# class LocalConfig:
-#     mode: Any
-#     cluster_config: Any = MISSING
+@dataclass
+class LocalConfig:
+    mode: Any
+    cluster_config: Any = MISSING
 
 
-# @dataclass
-# class ExecutionMode:
-#     location: Any
-#     local_config: Any = MISSING
-#     remote_config: Any = MISSING
+@dataclass
+class ExecutionMode:
+    location: Any
+    local_config: Any = MISSING
+    remote_config: Any = MISSING
+"""
