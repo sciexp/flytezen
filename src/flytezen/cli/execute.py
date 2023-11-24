@@ -1,12 +1,10 @@
 import importlib
-import inspect
 import os
 import pathlib
 import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
 
 import rich.syntax
 import rich.tree
