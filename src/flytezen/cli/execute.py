@@ -50,11 +50,13 @@ class ExecutionMode(str, Enum):
         registered and executed remotely, intended for production or continuous
         integration (CI) environments. The image tag is set to the git commit
         short SHA.
+
+    TODO: python >=3.11, use StrEnum with auto() values
     """
 
-    LOCAL = "local"
-    DEV = "dev"
-    PROD = "prod"
+    LOCAL = "LOCAL"
+    DEV = "DEV"
+    PROD = "PROD"
 
     # def __str__(self):
     #     return self.value
@@ -77,8 +79,8 @@ class ExecutionContext:
         version (str): A string representing the version of the workflow, typically including a commit hash or other identifiers.
     """
 
-    # mode: ExecutionMode = ExecutionMode.DEV
-    mode: str = "dev"
+    mode: ExecutionMode = ExecutionMode.DEV
+    # mode: str = "dev"
     image: str = "ghcr.io/sciexp/flytezen"
     tag: str = "main"
     version: str = f"flytezen-main-{random_alphanumeric_suffix()}"
@@ -147,8 +149,8 @@ def execute_workflow(
     entity = getattr(module, entity_config.entity_name)
 
     # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
-    # if execution_context.mode == ExecutionMode.LOCAL:
-    if execution_context.mode == "local":
+    if execution_context.mode == ExecutionMode.LOCAL:
+    # if execution_context.mode == "local":
         output = entity(**entity_config.inputs)
         logger.info(f"Workflow output:\n\n{output}\n")
         return
@@ -162,8 +164,8 @@ def execute_workflow(
         img_name=f"{execution_context.image}:{execution_context.tag}"
     )
 
-    # if execution_context.mode == ExecutionMode.DEV:
-    if execution_context.mode == "dev":
+    if execution_context.mode == ExecutionMode.DEV:
+    # if execution_context.mode == "dev":
         logger.warning(
             "This execution_context.mode is intended for development purposes only.\n\n"
             "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
@@ -186,8 +188,8 @@ def execute_workflow(
                 distribution_location=upload_url,
             ),
         )
-    # elif execution_context.mode == ExecutionMode.PROD:
-    elif execution_context.mode == "prod":
+    elif execution_context.mode == ExecutionMode.PROD:
+    # elif execution_context.mode == "prod":
         logger.info(
             f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
         )
@@ -264,22 +266,22 @@ def main() -> None:
     ExecutionContextConf = builds(ExecutionContext)
     ContextConf = builds(ExecutionContext)
     local_execution_context = ContextConf(
-        # mode=ExecutionContext.LOCAL,
-        mode="local",
+        mode=ExecutionMode.LOCAL,
+        # mode="local",
         image="",
         tag="",
         version=f"{repo_name}-{git_branch}-{git_short_sha}-local-{random_alphanumeric_suffix()}",
     )
     dev_execution_context = ContextConf(
-        # mode=ExecutionContext.DEV,
-        mode="dev",
+        mode=ExecutionMode.DEV,
+        # mode="dev",
         image=workflow_image,
         tag=git_branch,
         version=f"{repo_name}-{git_branch}-{git_short_sha}-dev-{random_alphanumeric_suffix()}",
     )
     prod_execution_context = ContextConf(
-        # mode=ExecutionContext.PROD,
-        mode="prod",
+        mode=ExecutionMode.PROD,
+        # mode="prod",
         image=workflow_image,
         tag=git_short_sha,
         version=f"{repo_name}-{git_branch}-{git_short_sha}",
@@ -344,7 +346,7 @@ if __name__ == "__main__":
 
     execution_context:
       _target_: flytezen.cli.execute.ExecutionContext
-      mode: dev
+      mode: DEV
       image: localhost:30000/flytezen
       tag: main
       version: flytezen-main-16323b3-dev-a8x
