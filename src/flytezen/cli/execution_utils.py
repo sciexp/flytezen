@@ -81,6 +81,8 @@ def generate_entity_configs(
 
         # import entities that are instances of EntityTypes
         entities = inspect.getmembers(
+            # TODO: validate that PythonTasks function as expected
+            # submodule, lambda member: isinstance(member, EntityTypes.__args__)
             submodule, lambda member: isinstance(member, WorkflowBase)
         )
 
