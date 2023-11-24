@@ -1,11 +1,11 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, make_dataclass
 from pprint import pformat
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Tuple, Type
 
 import joblib
 import pandas as pd
-from dataclasses_json import dataclass_json
 from flytekit import task, workflow
+from mashumaro.mixins.json import DataClassJSONMixin
 from sklearn.datasets import load_wine
 from sklearn.linear_model import LogisticRegression
 
@@ -14,21 +14,41 @@ from flytezen.logging import configure_logging
 
 logger = configure_logging("lrwine")
 
-logistic_regression_custom_types: Dict[str, Type[Optional[Any]]] = {
-    "penalty": Optional[str],
-    "class_weight": Optional[dict],
-    "random_state": Optional[int],
-    "n_jobs": Optional[int],
-    "l1_ratio": Optional[float],
+# This is an optional dictionary that can be used to override the
+# default types and values inferred from the callable if necessary
+# or required. For this example, we provide commented out defaults
+# to illustrate the types that are inferred from the callable and
+# the ability to override them.
+custom_types_defaults: Dict[str, Tuple[Type, Any]] = {
+    # "penalty": (str, "l2"),
+    # "dual": (bool, False),
+    # "tol": (float, 1e-4),
+    # "C": (float, 1.0),
+    # "fit_intercept": (bool, True),
+    # "intercept_scaling": (int, 1),
+    # "class_weight": (Optional[dict], None),
+    # "random_state": (Optional[int], None),
+    # "solver": (str, "lbfgs"),
+    "max_iter": (int, 2000),
+    # "multi_class": (str, "auto"),
+    # "verbose": (int, 0),
+    # "warm_start": (bool, False),
+    # "n_jobs": (Optional[int], None),
+    # "l1_ratio": (Optional[float], None),
 }
 
-LogisticRegressionInterface = dataclass_json(
-    dataclass(
-        create_dataclass_from_callable(
-            LogisticRegression, logistic_regression_custom_types
-        )
-    )
+logistic_regression_fields = create_dataclass_from_callable(
+    LogisticRegression, custom_types_defaults
 )
+
+LogisticRegressionInterface = make_dataclass(
+    "LogisticRegressionInterface",
+    logistic_regression_fields,
+    bases=(DataClassJSONMixin,),
+    # TODO: Python 3.12, https://github.com/python/cpython/pull/102104
+    # module=__name__,
+)
+LogisticRegressionInterface.__module__ = __name__
 
 
 @task
@@ -119,3 +139,25 @@ def training_workflow(
 #         data=processed_data,
 #         logistic_regression=logistic_regression,
 #     )
+
+
+# The following can be used to test dynamic dataclass construction
+# using the dataclasses_json library instead of mashumaro,
+
+# from dataclasses_json import dataclass_json
+# from flytezen.configuration import create_dataclass_from_callable_json
+# logistic_regression_custom_types: Dict[str, Type[Optional[Any]]] = {
+#     "penalty": Optional[str],
+#     "class_weight": Optional[dict],
+#     "random_state": Optional[int],
+#     "n_jobs": Optional[int],
+#     "l1_ratio": Optional[float],
+# }
+
+# LogisticRegressionInterface = dataclass_json(
+#     dataclass(
+#         create_dataclass_from_callable_json(
+#             LogisticRegression, logistic_regression_custom_types
+#         )
+#     )
+# )
