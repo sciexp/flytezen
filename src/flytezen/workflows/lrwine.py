@@ -26,15 +26,15 @@ custom_types_defaults: Dict[str, Tuple[Type, Any]] = {
     # "C": (float, 1.0),
     # "fit_intercept": (bool, True),
     # "intercept_scaling": (int, 1),
-    # "class_weight": (Optional[dict], None),
-    # "random_state": (Optional[int], None),
+    "class_weight": (Optional[dict], None),
+    "random_state": (Optional[int], None),
     # "solver": (str, "lbfgs"),
     "max_iter": (int, 2000),
     # "multi_class": (str, "auto"),
     # "verbose": (int, 0),
     # "warm_start": (bool, False),
-    # "n_jobs": (Optional[int], None),
-    # "l1_ratio": (Optional[float], None),
+    "n_jobs": (Optional[int], None),
+    "l1_ratio": (Optional[float], None),
 }
 
 logistic_regression_fields = create_dataclass_from_callable(
