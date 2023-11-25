@@ -474,10 +474,10 @@ if __name__ == "__main__":
             execution_context=dev \
             entity_config=lrwine_training_workflow
         > flytezen \
-            entity_config.inputs.logistic_regression.C=0.4 \
-            entity_config.inputs.logistic_regression.max_iter=1200
+            entity_config.inputs._args_.0.logistic_regression.C=0.4 \
+            entity_config.inputs._args_.0.logistic_regression.max_iter=1200
         > flytezen \
-            --multirun entity_config.inputs.logistic_regression.C=0.2,0.5
+            --multirun entity_config.inputs._args_.0.logistic_regression.C=0.2,0.5
 
         See the the hydra config output in the git-ignored `./outputs` or
         `./multirun` directories. These are also stored as an artifact of

@@ -262,23 +262,26 @@ def generate_hydra_config() -> HydraConf:
                   * `${hydra.help.app_name} -c job execution_context=prod`
                   * `${hydra.help.app_name} -c job entity_config==example_wf`
                   # This example will fail if you specify an entity_config with different inputs.
-                  * `${hydra.help.app_name} -c job entity_config.inputs.logistic_regression.max_iter=1200`
+                  * `${hydra.help.app_name} -c job entity_config.inputs._args_.0.logistic_regression.max_iter=1200`
 
                 This will generate `== Config ==` above resolved in context of the command line overrides.
                 Removing the `-c job` flag will execute the workflow with the specified configuration.
                 The resolved configuration will be stored in the `outputs` or `multirun` directories.
 
-                Use `${hydra.help.app_name} --hydra-help` to view the hydra help.
-                This contains, for example, the commands to install shell tab completion.
-                For example in bash or zsh, if the active configuration has path `inputs.logistic_regression`
-                representing the parameters of a sklearn.linear_model.LogisticRegression instance:
+                Use `${hydra.help.app_name} --hydra-help` to view the hydra
+                help. This contains, for example, the commands to install shell
+                tab completion. For example in bash or zsh, if the active
+                configuration has path
+                `entity_config.inputs._args_.0.logistic_regression`
+                representing the parameters of a
+                sklearn.linear_model.LogisticRegression instance:
 
                 > eval "$$(flytezen -sc install=bash)"
-                > flytezen inputs.logistic_regression.[TAB]
-                inputs.logistic_regression.C=                  inputs.logistic_regression.fit_intercept=
-                inputs.logistic_regression._target_=           inputs.logistic_regression.intercept_scaling=
-                inputs.logistic_regression.class_weight.       inputs.logistic_regression.l1_ratio=
-                inputs.logistic_regression.dual=               inputs.logistic_regression.max_iter=
+                > flytezen entity_config.inputs._args_.0.logistic_regression.[TAB]
+                entity_config.inputs._args_.0.logistic_regression.C=
+                entity_config.inputs._args_.0.logistic_regression._target_=
+                entity_config.inputs._args_.0.logistic_regression.class_weight=
+                entity_config.inputs._args_.0.logistic_regression.dual=
                 ..."""
             ),
             template=dedent(
