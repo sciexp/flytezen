@@ -2,7 +2,7 @@
 
 A template for hydra-zen configuration of Flyte workflow execution.
 
-## Directory tree
+## Layout
 
 <details>
 
@@ -33,6 +33,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   │   ├── cli
 │   │   │   ├── __init__.py
 │   │   │   ├── execute.py
+│   │   │   ├── execution_config.py
 │   │   │   └── execution_utils.py
 │   │   ├── workflows
 │   │   │   ├── __init__.py
@@ -41,6 +42,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   │   ├── __init__.py
 │   │   ├── __main__.py
 │   │   ├── configuration.py
+│   │   ├── constants.py
 │   │   └── logging.py
 │   └── .gitkeep
 ├── tests
@@ -59,19 +61,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ├── poetry.lock
 └── pyproject.toml
 
-14 directories, 35 files
+14 directories, 38 files
 ```
 
 </details>
-
-## flyte-template
-
-A template for the recommended layout of a Flyte enabled repository for code written in python using [flytekit](https://docs.flyte.org/projects/flytekit/en/latest/).
-
-### Usage
-
-To get up and running with your Flyte project, we recommend following the
-[Flyte getting started guide](https://docs.flyte.org/en/latest/getting_started.html).
-
-We recommend using a git repository to version this project, so that you can
-use the git sha to version your Flyte workflows.
