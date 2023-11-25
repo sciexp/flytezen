@@ -255,7 +255,7 @@ EXISTING_IMAGE_TAG ?= main
 NEW_IMAGE_TAG ?= $(GIT_BRANCH)
 
 # Default bumps main to the checked out branch for dev purposes
-tag_images: ## Add tag to existing images, e.g. NEW_IMAGE_TAG=latest make -n tag_images
+tag_images: ## Add tag to existing images, (default main --> branch, override with make -n tag_images NEW_IMAGE_TAG=latest).
 	crane tag $(WORKFLOW_IMAGE):$(EXISTING_IMAGE_TAG) $(NEW_IMAGE_TAG)
 	crane tag ghcr.io/$(GH_ORG)/$(GH_REPO):$(EXISTING_IMAGE_TAG) $(NEW_IMAGE_TAG)
 
