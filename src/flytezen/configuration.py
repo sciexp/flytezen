@@ -117,9 +117,10 @@ def create_dataclass_from_callable(
     return fields
 
 
-#-----------
+# -----------
 # Deprecated
-#-----------
+# -----------
+
 
 class TypeInferenceError(Exception):
     pass
@@ -313,9 +314,10 @@ def create_dataclass_from_callable_json(
 
     return new_class
 
-#---------------
+
+# ---------------
 # End Deprecated
-#---------------
+# ---------------
 
 if __name__ == "__main__":
     # Commented code here is primarily to support CLI or IDE debugger execution.

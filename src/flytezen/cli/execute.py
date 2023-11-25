@@ -82,7 +82,7 @@ class ExecutionContext:
 
 def handle_local_execution(exec_mode, execution_context, entity, entity_config):
     if exec_mode.local_config.mode == LocalMode.shell:
-    # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
+        # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
         output = entity(**entity_config.inputs)
         logger.info(f"Workflow output:\n\n{output}\n")
         return True
@@ -272,8 +272,6 @@ def execute_workflow(
 
     else:
         raise_invalid_mode_error(exec_mode.location, ExecutionLocation)
-
-
 
 
 def main() -> None:
