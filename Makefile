@@ -19,9 +19,9 @@ help: ## Display this help. (Default)
 help_sort: ## Display alphabetized version of help.
 	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-#---------
-# flytezen
-#---------
+#--------
+# package
+#--------
 
 test: ## Run tests. See pyproject.toml for configuration.
 	poetry run pytest
@@ -44,16 +44,47 @@ typecheck: ## Run typechecker
 # local dev cluster
 #------------------
 
-local_image: ## Build local image.
-	@echo "building image: $(WORKFLOW_IMAGE):$(GIT_BRANCH)"
+local_cluster_install: ## Install localctl CLI to manage local dev cluster.
+	@(which localctl > /dev/null && echo "\nlocalctl already installed\n") || \
+	(cd ./scripts && ./localctl install) && \
+	which localctl && localctl -h
+
+local_cluster_start: ## Start local dev cluster.
+	@localctl start
+
+local_cluster_stop: ## Stop local dev cluster.
+	@localctl stop
+
+local_cluster_info: ## Print local dev cluster info.
+	@localctl info
+
+local_cluster_help: ## Print local dev cluster help.
+	@localctl -h
+
+local_cluster_remove: ## Remove local dev cluster.
+	@localctl -v remove
+
+# make -n build_local_image WORKFLOW_IMAGE=localhost:30000/flytezen
+build_local_image: ## Build local image.
+	@echo "building image: $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)"
 	@echo
-	docker images -a $(WORKFLOW_IMAGE)
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
 	@echo
-	docker build -t $(WORKFLOW_IMAGE):$(GIT_BRANCH) -f $(ACTIVE_DOCKERFILE) .
+	docker build -t $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH) -f $(ACTIVE_DOCKERFILE) .
 	@echo
-	docker push $(WORKFLOW_IMAGE):$(GIT_BRANCH)
+	docker push $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)
 	@echo
-	docker images -a $(WORKFLOW_IMAGE)
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
+
+# make -n remove_local_image GIT_BRANCH=N-branch-to-remove
+remove_local_image: ## Remove local image.
+	@echo "removing image: $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)"
+	@echo
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
+	@echo
+	docker rmi $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)
+	@echo
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
 
 #---------------
 # workflow setup
@@ -153,17 +184,34 @@ package_and_register: package_workflows register_workflows
 run_help: ## Print hydra help for execute script.
 	poetry run flytezen --help
 
-.PHONY: run
-run: ## Run registered workflow (sync).
-	poetry run flytezen
+# Capture additional arguments to pass to hydra-zen cli
+# converting them to make do-nothing targets
+# supports passing hydra overrides as ARGS, e.g.:
+#   make run HYDRA_OVERRIDES="entity_config.inputs.logistic_regression.max_iter=2000 execution_context=local_shell"
+HYDRA_OVERRIDES = $(filter-out $@,$(MAKECMDGOALS))
+%:
+	@:
 
-multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
+.PHONY: run
+run: ## Run registered workflow in remote dev mode. (default)
+	poetry run flytezen $(HYDRA_OVERRIDES)
+
+run_prod: ## Run registered workflow in remote prod mode. (ci default)
+	poetry run flytezen execution_context=remote_prod $(HYDRA_OVERRIDES)
+
+run_local_cluster: ## Run registered workflow in local cluster dev mode.
+	poetry run flytezen execution_context=local_cluster_dev $(HYDRA_OVERRIDES)
+
+run_local: ## Run registered workflow in local shell mode. (only with all python tasks)
+	poetry run flytezen execution_context=local_shell $(HYDRA_OVERRIDES)
+
+multirun: ## Run registered workflow with multiple hyperparameter sets.
 	poetry run flytezen --multirun workflow.hyperparameters.C=0.2,0.5
 
 run_async: ## Run registered workflow (async).
-	poetry run flytezen workflow.wait=False
+	poetry run flytezen execution_context.wait=False
 
-run_unregistered: ## Dispatch unregistered run from flytekit cli
+run_cli_hp_config: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
 	--remote \
 	--project $(WORKFLOW_PROJECT) \
@@ -173,11 +221,12 @@ run_unregistered: ## Dispatch unregistered run from flytekit cli
 	$(WORKFLOW_NAME) \
 	--hyperparameters $(WORKFLOW_FILE_WORKFLOW_ARGS)
 
-run_local: ## Dispatch unregistered run from flytekit cli
+run_cli_hp_config_local: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
 	$(WORKFLOW_FILE) \
 	$(WORKFLOW_NAME) \
 	--hyperparameters $(WORKFLOW_FILE_WORKFLOW_ARGS)
+
 #-------------
 # CI
 #-------------
@@ -202,9 +251,17 @@ build_images_view_workflow: ## Open Build Images workflow summary.
 docker_login: ## Login to ghcr docker registry. Check regcreds in $HOME/.docker/config.json.
 	docker login ghcr.io -u $(GH_ORG) -p $(GITHUB_TOKEN)
 
-tag_images: ## Tag latest docker images.
-	crane tag $(WORKFLOW_IMAGE):$(WORKFLOW_IMAGE_TAG) $(GLOBAL_IMAGE_TAG)
-	crane tag ghcr.io/$(GH_ORG)/$(GH_REPO):$(WORKFLOW_IMAGE_TAG) $(GLOBAL_IMAGE_TAG)
+EXISTING_IMAGE_TAG ?= main
+NEW_IMAGE_TAG ?= $(GIT_BRANCH)
+
+# Default bumps main to the checked out branch for dev purposes
+tag_images: ## Add tag to existing images, (default main --> branch, override with make -n tag_images NEW_IMAGE_TAG=latest).
+	crane tag $(WORKFLOW_IMAGE):$(EXISTING_IMAGE_TAG) $(NEW_IMAGE_TAG)
+	crane tag ghcr.io/$(GH_ORG)/$(GH_REPO):$(EXISTING_IMAGE_TAG) $(NEW_IMAGE_TAG)
+
+list_gcr_workflow_image_tags: ## List images in gcr.
+	gcloud container images list --repository=$(GCP_ARTIFACT_REGISTRY_PATH)                                                                                                                             │
+	gcloud container images list-tags $(WORKFLOW_IMAGE)
 
 #-------------
 # system / dev
@@ -270,18 +327,18 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	@echo
 	PAGER=cat gh secret list --repo=$(GH_REPO)
 
+# gh variable set WORKFLOW_REGISTRATION_MODE --repo="$(GH_REPO)" --body="prod"
+# gh variable set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
+# gh variable set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
+# gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
+# gh variable set WORKFLOW_PACKAGE_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_PACKAGE_PATH)"
+# gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
 ghvars: ## Update github secrets for GH_REPO from ".env" file.
 	@echo "variables before updates:"
 	@echo
 	PAGER=cat gh variable list --repo=$(GH_REPO)
 	@echo
-	gh variable set WORKFLOW_PROJECT --repo="$(GH_REPO)" --body="$(WORKFLOW_PROJECT)"
-	gh variable set WORKFLOW_DOMAIN --repo="$(GH_REPO)" --body="$(WORKFLOW_DOMAIN)"
-	gh variable set WORKFLOW_NAME --repo="$(GH_REPO)" --body="$(WORKFLOW_NAME)"
-	gh variable set WORKFLOW_PACKAGE_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_PACKAGE_PATH)"
-	gh variable set WORKFLOW_IMPORT_PATH --repo="$(GH_REPO)" --body="$(WORKFLOW_IMPORT_PATH)"
 	gh variable set WORKFLOW_IMAGE --repo="$(GH_REPO)" --body="$(WORKFLOW_IMAGE)"
-	gh variable set WORKFLOW_REGISTRATION_MODE --repo="$(GH_REPO)" --body="prod"
 	@echo
 	@echo variables after updates:
 	@echo

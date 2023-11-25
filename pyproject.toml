@@ -3,6 +3,16 @@ target-version = ["py37"]
 line-length = 80
 skip-string-normalization = true
 
+[tool.docformatter]
+black = true
+wrap-summaries = 80
+wrap-descriptions = 80
+recursive = true
+in-place = true
+diff = true
+make-summary-multi-line = true
+pre-summary-newline = true
+
 [tool.ruff]
 target-version = "py37"
 line-length = 80
@@ -94,6 +104,7 @@ hydra-joblib-launcher = ">=1.2.0"
 rich = "13.6.0"
 dataclasses-json = ">=0.5.9"
 fsspec = "<2023.10.0"
+mashumaro = ">=3.10"
 
 # dev dependencies
 black = { version = ">=23.10.0", optional = true, extras = ["jupyter"] }
@@ -119,6 +130,7 @@ black = { version = ">=23.10.0", extras = ["jupyter"] }
 mypy = ">=1.6.1"
 pyright = ">=1.1.336"
 ruff = ">=0.1.0"
+docformatter = { version = ">=1.7.5", extras = ["tomli"] }
 
 [tool.poetry.group.test]
 optional = true
@@ -224,7 +236,7 @@ formats = "ipynb,text//py:percent,text//md"
 
 [tool.poetry]
 name = "flytezen"
-version = "0.1.0.dev1"
+version = "0.0.1.dev1"
 packages = [
     { include = "flytezen", from = "src" },
 ]
