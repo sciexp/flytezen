@@ -8,6 +8,7 @@ import pandas as pd
 # from mashumaro.mixins.json import DataClassJSONMixin
 from dataclasses_json import DataClassJsonMixin as DataClassJSONMixin
 from flytekit import task, workflow
+from flytekit.types.file import JoblibSerializedFile
 from sklearn.datasets import load_wine
 from sklearn.linear_model import LogisticRegression
 
@@ -74,10 +75,8 @@ def process_data(data: pd.DataFrame) -> pd.DataFrame:
 
 @task
 def train_model(
-    data: pd.DataFrame,
-    logistic_regression: LogisticRegressionInterface
-    # ) -> str:
-) -> LogisticRegression:
+    data: pd.DataFrame, logistic_regression: LogisticRegressionInterface
+) -> JoblibSerializedFile:
     """
     Train a model on the wine dataset.
     """
@@ -87,8 +86,8 @@ def train_model(
     model = LogisticRegression(**asdict(logistic_regression))
     model_path = "logistic_regression_model.joblib"
     joblib.dump(model, model_path)
-    # return model_path
-    return model
+    model_file = JoblibSerializedFile(model_path)
+    return model_file
 
 
 @workflow
@@ -96,8 +95,7 @@ def training_workflow(
     logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(
         max_iter=2000
     ),
-    # ) -> str:
-) -> LogisticRegression:
+) -> JoblibSerializedFile:
     """
     Put all of the steps together into a single workflow.
     """
