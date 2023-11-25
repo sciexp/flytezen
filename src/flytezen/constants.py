@@ -3,7 +3,7 @@ import subprocess
 
 from flytezen.logging import configure_logging
 
-logger = configure_logging("constants")
+logger = configure_logging("flytezen.constants")
 
 def get_git_repo_root(path="."):
     try:
