@@ -38,6 +38,10 @@ from flytezen.cli.execution_utils import (
     random_alphanumeric_suffix,
     wait_for_workflow_completion,
 )
+from flytezen.constants import (
+    LOCAL_CLUSTER_CONFIG_FILE_PATH,
+    REMOTE_CLUSTER_CONFIG_FILE_PATH,
+)
 from flytezen.logging import configure_logging
 
 logger = configure_logging("execute")
@@ -129,15 +133,9 @@ def execute_workflow(
     )
     entity = getattr(module, entity_config.entity_name)
 
-    # if execution_context.mode.local_config.mode == LocalMode.shell:
-    #     # if execution_context.mode == "local":
-    #     output = entity(**entity_config.inputs)
-    #     logger.info(f"Workflow output:\n\n{output}\n")
-    #     return
-
     exec_mode = execution_context.mode
 
-    # Check for LOCAL execution
+    # LOCAL execution
     if exec_mode.location == ExecutionLocation.local:
         if exec_mode.local_config.mode == LocalMode.shell:
             # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
@@ -147,7 +145,9 @@ def execute_workflow(
 
         elif exec_mode.local_config.mode == LocalMode.cluster:
             remote = FlyteRemote(
-                config=FlyteConfig.auto(),
+                config=FlyteConfig.auto(
+                    config_file=LOCAL_CLUSTER_CONFIG_FILE_PATH
+                ),
                 default_project=execution_context.project,
                 default_domain=execution_context.domain,
             )
@@ -197,10 +197,12 @@ def execute_workflow(
                 )
                 sys.exit(1)
 
-    # Check for REMOTE execution
+    # REMOTE execution
     elif exec_mode.location == ExecutionLocation.remote:
         remote = FlyteRemote(
-            config=FlyteConfig.auto(),
+            config=FlyteConfig.auto(
+                config_file=REMOTE_CLUSTER_CONFIG_FILE_PATH
+            ),
             default_project=execution_context.project,
             default_domain=execution_context.domain,
         )
@@ -255,55 +257,6 @@ def execute_workflow(
             f"{', '.join([e.value for e in ExecutionLocation])}."
         )
         sys.exit(1)
-
-    # remote = FlyteRemote(
-    #     config=FlyteConfig.auto(),
-    #     default_project=execution_context.project,
-    #     default_domain=execution_context.domain,
-    # )
-    # image_config = ImageConfig.auto(
-    #     img_name=f"{execution_context.image}:{execution_context.tag}"
-    # )
-
-    # if execution_context.mode.remote_config.mode == ClusterMode.DEV:
-    #     # if execution_context.mode == "dev":
-    #     logger.warning(
-    #         "This execution_context.mode is intended for development purposes only.\n\n"
-    #         "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
-    #     )
-    #     with tempfile.TemporaryDirectory() as tmp_dir:
-    #         logger.debug(
-    #             f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
-    #         )
-    #         _, upload_url = remote.fast_package(
-    #             pathlib.Path(execution_context.package_path),
-    #             output=tmp_dir,
-    #         )
-    #     logger.info(f"Workflow package uploaded to:\n\n  {upload_url}\n")
-
-    #     serialization_settings = SerializationSettings(
-    #         image_config=image_config,
-    #         fast_serialization_settings=FastSerializationSettings(
-    #             enabled=True,
-    #             destination_dir="/root",
-    #             distribution_location=upload_url,
-    #         ),
-    #     )
-    # elif execution_context.mode.remote_config.mode == ClusterMode.PROD:
-    #     # elif execution_context.mode == "prod":
-    #     logger.info(
-    #         f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
-    #     )
-    #     serialization_settings = SerializationSettings(
-    #         image_config=image_config
-    #     )
-    # else:
-    #     logger.error(
-    #         f"Invalid workflow registration mode: {execution_context.mode}. "
-    #         "Please set `execution_context.mode.remote_config.mode` to one of the following: "
-    #         f"{', '.join([e.value for e in ClusterMode])}."
-    #     )
-    #     sys.exit(1)
 
     remote.register_workflow(
         entity=entity,
@@ -419,10 +372,6 @@ def main() -> None:
     )
     execution_context_store(remote_dev_execution_context, name="remote_dev")
     execution_context_store(remote_prod_execution_context, name="remote_prod")
-
-    # execution_context_store(local_execution_context, name="local")
-    # execution_context_store(dev_execution_context, name="dev")
-    # execution_context_store(prod_execution_context, name="prod")
 
     # define the entity_config store
     entity_config_store = store(group="entity_config")
@@ -566,3 +515,53 @@ if __name__ == "__main__":
 
 #     def __str__(self):
 #         return self.value
+
+
+# remote = FlyteRemote(
+#     config=FlyteConfig.auto(),
+#     default_project=execution_context.project,
+#     default_domain=execution_context.domain,
+# )
+# image_config = ImageConfig.auto(
+#     img_name=f"{execution_context.image}:{execution_context.tag}"
+# )
+
+# if execution_context.mode.remote_config.mode == ClusterMode.DEV:
+#     # if execution_context.mode == "dev":
+#     logger.warning(
+#         "This execution_context.mode is intended for development purposes only.\n\n"
+#         "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
+#     )
+#     with tempfile.TemporaryDirectory() as tmp_dir:
+#         logger.debug(
+#             f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
+#         )
+#         _, upload_url = remote.fast_package(
+#             pathlib.Path(execution_context.package_path),
+#             output=tmp_dir,
+#         )
+#     logger.info(f"Workflow package uploaded to:\n\n  {upload_url}\n")
+
+#     serialization_settings = SerializationSettings(
+#         image_config=image_config,
+#         fast_serialization_settings=FastSerializationSettings(
+#             enabled=True,
+#             destination_dir="/root",
+#             distribution_location=upload_url,
+#         ),
+#     )
+# elif execution_context.mode.remote_config.mode == ClusterMode.PROD:
+#     # elif execution_context.mode == "prod":
+#     logger.info(
+#         f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
+#     )
+#     serialization_settings = SerializationSettings(
+#         image_config=image_config
+#     )
+# else:
+#     logger.error(
+#         f"Invalid workflow registration mode: {execution_context.mode}. "
+#         "Please set `execution_context.mode.remote_config.mode` to one of the following: "
+#         f"{', '.join([e.value for e in ClusterMode])}."
+#     )
+#     sys.exit(1)
