@@ -156,26 +156,29 @@ run_help: ## Print hydra help for execute script.
 # Capture additional arguments to pass to hydra-zen cli
 # converting them to make do-nothing targets
 # supports passing hydra overrides as ARGS, e.g.:
-#   make run HYDRA_OVERRIDES="inputs.logistic_regression.max_iter=2000 execution_context=local"
+#   make run HYDRA_OVERRIDES="entity_config.inputs.logistic_regression.max_iter=2000 execution_context=local_shell"
 HYDRA_OVERRIDES = $(filter-out $@,$(MAKECMDGOALS))
 %:
 	@:
 
 .PHONY: run
-run: ## Run registered workflow (sync).
+run: ## Run registered workflow in remote dev mode. (default)
 	poetry run flytezen $(HYDRA_OVERRIDES)
 
-run_prod: ## Run registered workflow (sync).
-	poetry run flytezen execution_context=prod $(HYDRA_OVERRIDES)
+run_prod: ## Run registered workflow in remote prod mode. (ci default)
+	poetry run flytezen execution_context=remote_prod $(HYDRA_OVERRIDES)
 
-run_local: ## Run registered workflow (sync).
-	poetry run flytezen execution_context=local $(HYDRA_OVERRIDES)
+run_local_cluster: ## Run registered workflow in local cluster dev mode.
+	poetry run flytezen execution_context=local_cluster_dev $(HYDRA_OVERRIDES)
 
-multirun: ## Run registered workflow (sync) with multiple hyperparameter sets.
+run_local: ## Run registered workflow in local shell mode. (only with all python tasks)
+	poetry run flytezen execution_context=local_shell $(HYDRA_OVERRIDES)
+
+multirun: ## Run registered workflow with multiple hyperparameter sets.
 	poetry run flytezen --multirun workflow.hyperparameters.C=0.2,0.5
 
 run_async: ## Run registered workflow (async).
-	poetry run flytezen workflow.wait=False
+	poetry run flytezen execution_context.wait=False
 
 run_cli_hp_config: ## Dispatch unregistered run from flytekit cli
 	pyflyte run \
