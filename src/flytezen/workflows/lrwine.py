@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from flytezen.configuration import create_dataclass_from_callable
 from flytezen.logging import configure_logging
 
-logger = configure_logging("lrwine")
+logger = configure_logging("flytezen.workflows.lrwine")
 
 # This is an optional dictionary that can be used to override the
 # default types and values inferred from the callable if necessary
