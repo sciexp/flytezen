@@ -362,7 +362,7 @@ def main() -> None:
 
     workflow_image = os.environ.get(
         "WORKFLOW_IMAGE",
-        "localhost:30000/flytezen",
+        f"localhost:30000/{repo_name}",
     )
 
     ExecutionContextConf = builds(ExecutionContext)
@@ -370,15 +370,15 @@ def main() -> None:
     # Local Shell
     local_shell_execution_context = ExecutionContextConf(
         mode=local_shell_config,
-        image=workflow_image,
-        tag=git_branch,
+        image="",
+        tag="",
         version=f"{repo_name}-{git_branch}-{git_short_sha}-local-{random_alphanumeric_suffix()}",
     )
 
     # Local Cluster Dev
     local_cluster_dev_execution_context = ExecutionContextConf(
         mode=local_cluster_dev_config,
-        image=workflow_image,
+        image=f"localhost:30000/{repo_name}",
         tag=git_branch,
         version=f"{repo_name}-{git_branch}-{git_short_sha}-local-{random_alphanumeric_suffix()}",
     )
@@ -386,7 +386,7 @@ def main() -> None:
     # Local Cluster Prod
     local_cluster_prod_execution_context = ExecutionContextConf(
         mode=local_cluster_prod_config,
-        image=workflow_image,
+        image=f"localhost:30000/{repo_name}",
         tag=git_short_sha,
         version=f"{repo_name}-{git_branch}-{git_short_sha}",
     )
