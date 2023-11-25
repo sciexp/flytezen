@@ -76,6 +76,16 @@ build_local_image: ## Build local image.
 	@echo
 	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
 
+# make -n remove_local_image GIT_BRANCH=N-branch-to-remove
+remove_local_image: ## Remove local image.
+	@echo "removing image: $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)"
+	@echo
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
+	@echo
+	docker rmi $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)
+	@echo
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
+
 #---------------
 # workflow setup
 #---------------
