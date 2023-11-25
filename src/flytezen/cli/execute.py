@@ -3,8 +3,7 @@ import os
 import pathlib
 import sys
 import tempfile
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import dataclass, field
 
 import rich.syntax
 import rich.tree
@@ -20,6 +19,17 @@ from flytekit.remote import FlyteRemote
 from hydra_zen import ZenStore, make_config, make_custom_builds_fn, to_yaml, zen
 from omegaconf import DictConfig
 
+from flytezen.cli.execution_config import (
+    ClusterMode,
+    ExecutionLocation,
+    ExecutionMode,
+    LocalMode,
+    local_cluster_dev_config,
+    local_cluster_prod_config,
+    local_shell_config,
+    remote_dev_config,
+    remote_prod_config,
+)
 from flytezen.cli.execution_utils import (
     EntityConfig,
     generate_entity_configs,
@@ -32,34 +42,6 @@ from flytezen.logging import configure_logging
 
 logger = configure_logging("execute")
 builds = make_custom_builds_fn(populate_full_signature=True)
-
-
-class ExecutionMode(str, Enum):
-    """
-    Enumerates the possible execution modes for a workflow.
-
-    Attributes:
-        LOCAL: Represents a local execution mode, where the workflow is executed
-        locally without remote registration.
-        DEV: Represents a development execution mode, where the workflow is
-        executed remotely for development purposes. This mode is used for
-        testing workflow code changes remotely without needing to rebuild and
-        push the container image so long as one with the current branch tag
-        already exists.
-        PROD: Represents a production execution mode, where the workflow is
-        registered and executed remotely, intended for production or continuous
-        integration (CI) environments. The image tag is set to the git commit
-        short SHA.
-
-    TODO: python >=3.11, use StrEnum with auto() values
-    """
-
-    LOCAL = "LOCAL"
-    DEV = "DEV"
-    PROD = "PROD"
-
-    # def __str__(self):
-    #     return self.value
 
 
 @dataclass_json
@@ -79,8 +61,7 @@ class ExecutionContext:
         version (str): A string representing the version of the workflow, typically including a commit hash or other identifiers.
     """
 
-    mode: ExecutionMode = ExecutionMode.DEV
-    # mode: str = "dev"
+    mode: ExecutionMode = field(default_factory=ExecutionMode)
     image: str = "ghcr.io/sciexp/flytezen"
     tag: str = "main"
     version: str = f"flytezen-main-{random_alphanumeric_suffix()}"
@@ -148,61 +129,181 @@ def execute_workflow(
     )
     entity = getattr(module, entity_config.entity_name)
 
-    # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
-    if execution_context.mode == ExecutionMode.LOCAL:
-    # if execution_context.mode == "local":
-        output = entity(**entity_config.inputs)
-        logger.info(f"Workflow output:\n\n{output}\n")
-        return
+    # if execution_context.mode.local_config.mode == LocalMode.shell:
+    #     # if execution_context.mode == "local":
+    #     output = entity(**entity_config.inputs)
+    #     logger.info(f"Workflow output:\n\n{output}\n")
+    #     return
 
-    remote = FlyteRemote(
-        config=FlyteConfig.auto(),
-        default_project=execution_context.project,
-        default_domain=execution_context.domain,
-    )
-    image_config = ImageConfig.auto(
-        img_name=f"{execution_context.image}:{execution_context.tag}"
-    )
+    exec_mode = execution_context.mode
 
-    if execution_context.mode == ExecutionMode.DEV:
-    # if execution_context.mode == "dev":
-        logger.warning(
-            "This execution_context.mode is intended for development purposes only.\n\n"
-            "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
-        )
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            logger.debug(
-                f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
+    # Check for LOCAL execution
+    if exec_mode.location == ExecutionLocation.local:
+        if exec_mode.local_config.mode == LocalMode.shell:
+            # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
+            output = entity(**entity_config.inputs)
+            logger.info(f"Workflow output:\n\n{output}\n")
+            return
+
+        elif exec_mode.local_config.mode == LocalMode.cluster:
+            remote = FlyteRemote(
+                config=FlyteConfig.auto(),
+                default_project=execution_context.project,
+                default_domain=execution_context.domain,
             )
-            _, upload_url = remote.fast_package(
-                pathlib.Path(execution_context.package_path),
-                output=tmp_dir,
+            image_config = ImageConfig.auto(
+                img_name=f"{execution_context.image}:{execution_context.tag}"
             )
-        logger.info(f"Workflow package uploaded to:\n\n  {upload_url}\n")
 
-        serialization_settings = SerializationSettings(
-            image_config=image_config,
-            fast_serialization_settings=FastSerializationSettings(
-                enabled=True,
-                destination_dir="/root",
-                distribution_location=upload_url,
-            ),
+            if exec_mode.local_config.cluster_config.mode == ClusterMode.dev:
+                logger.warning(
+                    "This execution_context.mode is intended for development purposes only.\n\n"
+                    "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
+                )
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    logger.debug(
+                        f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
+                    )
+                    _, upload_url = remote.fast_package(
+                        pathlib.Path(execution_context.package_path),
+                        output=tmp_dir,
+                    )
+                logger.info(
+                    f"Workflow package uploaded to:\n\n  {upload_url}\n"
+                )
+
+                serialization_settings = SerializationSettings(
+                    image_config=image_config,
+                    fast_serialization_settings=FastSerializationSettings(
+                        enabled=True,
+                        destination_dir="/root",
+                        distribution_location=upload_url,
+                    ),
+                )
+
+            elif exec_mode.local_config.cluster_config.mode == ClusterMode.prod:
+                logger.info(
+                    f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
+                )
+                serialization_settings = SerializationSettings(
+                    image_config=image_config
+                )
+
+            else:
+                logger.error(
+                    f"Invalid cluster mode: {exec_mode.local_config.cluster_config.mode}. "
+                    "Please set `execution_context.mode.local_config.cluster_config.mode` to one of the following: "
+                    f"{', '.join([e.value for e in ClusterMode])}."
+                )
+                sys.exit(1)
+
+    # Check for REMOTE execution
+    elif exec_mode.location == ExecutionLocation.remote:
+        remote = FlyteRemote(
+            config=FlyteConfig.auto(),
+            default_project=execution_context.project,
+            default_domain=execution_context.domain,
         )
-    elif execution_context.mode == ExecutionMode.PROD:
-    # elif execution_context.mode == "prod":
-        logger.info(
-            f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
+        image_config = ImageConfig.auto(
+            img_name=f"{execution_context.image}:{execution_context.tag}"
         )
-        serialization_settings = SerializationSettings(
-            image_config=image_config
-        )
+
+        if exec_mode.remote_config.mode == ClusterMode.dev:
+            logger.warning(
+                "This execution_context.mode is intended for development purposes only.\n\n"
+                "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
+            )
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                logger.debug(
+                    f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
+                )
+                _, upload_url = remote.fast_package(
+                    pathlib.Path(execution_context.package_path),
+                    output=tmp_dir,
+                )
+            logger.info(f"Workflow package uploaded to:\n\n  {upload_url}\n")
+
+            serialization_settings = SerializationSettings(
+                image_config=image_config,
+                fast_serialization_settings=FastSerializationSettings(
+                    enabled=True,
+                    destination_dir="/root",
+                    distribution_location=upload_url,
+                ),
+            )
+
+        elif exec_mode.remote_config.mode == ClusterMode.prod:
+            logger.info(
+                f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
+            )
+            serialization_settings = SerializationSettings(
+                image_config=image_config
+            )
+
+        else:
+            logger.error(
+                f"Invalid remote cluster mode: {exec_mode.remote_config.mode}. "
+                "Please set `execution_context.mode.remote_config.mode` to one of the following: "
+                f"{', '.join([e.value for e in ClusterMode])}."
+            )
+            sys.exit(1)
+
     else:
         logger.error(
-            f"Invalid workflow registration mode: {execution_context.mode}. "
-            "Please set the 'name' of ExecutionContext to one of the following: "
-            f"{', '.join([e.value for e in ExecutionMode])}."
+            f"Invalid execution location: {exec_mode.location}. "
+            "Please set `execution_context.mode.location` to one of the following: "
+            f"{', '.join([e.value for e in ExecutionLocation])}."
         )
         sys.exit(1)
+
+    # remote = FlyteRemote(
+    #     config=FlyteConfig.auto(),
+    #     default_project=execution_context.project,
+    #     default_domain=execution_context.domain,
+    # )
+    # image_config = ImageConfig.auto(
+    #     img_name=f"{execution_context.image}:{execution_context.tag}"
+    # )
+
+    # if execution_context.mode.remote_config.mode == ClusterMode.DEV:
+    #     # if execution_context.mode == "dev":
+    #     logger.warning(
+    #         "This execution_context.mode is intended for development purposes only.\n\n"
+    #         "Please use 'prod' execution_context.mode for production or CI environments.\n\n"
+    #     )
+    #     with tempfile.TemporaryDirectory() as tmp_dir:
+    #         logger.debug(
+    #             f"Packaged tarball temporary directory:\n\n\t{tmp_dir}\n"
+    #         )
+    #         _, upload_url = remote.fast_package(
+    #             pathlib.Path(execution_context.package_path),
+    #             output=tmp_dir,
+    #         )
+    #     logger.info(f"Workflow package uploaded to:\n\n  {upload_url}\n")
+
+    #     serialization_settings = SerializationSettings(
+    #         image_config=image_config,
+    #         fast_serialization_settings=FastSerializationSettings(
+    #             enabled=True,
+    #             destination_dir="/root",
+    #             distribution_location=upload_url,
+    #         ),
+    #     )
+    # elif execution_context.mode.remote_config.mode == ClusterMode.PROD:
+    #     # elif execution_context.mode == "prod":
+    #     logger.info(
+    #         f"Registering workflow:\n\n\t{entity_config.module_name}.{entity_config.entity_name}\n"
+    #     )
+    #     serialization_settings = SerializationSettings(
+    #         image_config=image_config
+    #     )
+    # else:
+    #     logger.error(
+    #         f"Invalid workflow registration mode: {execution_context.mode}. "
+    #         "Please set `execution_context.mode.remote_config.mode` to one of the following: "
+    #         f"{', '.join([e.value for e in ClusterMode])}."
+    #     )
+    #     sys.exit(1)
 
     remote.register_workflow(
         entity=entity,
@@ -263,25 +364,44 @@ def main() -> None:
         "WORKFLOW_IMAGE",
         "localhost:30000/flytezen",
     )
+
     ExecutionContextConf = builds(ExecutionContext)
-    ContextConf = builds(ExecutionContext)
-    local_execution_context = ContextConf(
-        mode=ExecutionMode.LOCAL,
-        # mode="local",
-        image="",
-        tag="",
+
+    # Local Shell
+    local_shell_execution_context = ExecutionContextConf(
+        mode=local_shell_config,
+        image=workflow_image,
+        tag=git_branch,
         version=f"{repo_name}-{git_branch}-{git_short_sha}-local-{random_alphanumeric_suffix()}",
     )
-    dev_execution_context = ContextConf(
-        mode=ExecutionMode.DEV,
-        # mode="dev",
+
+    # Local Cluster Dev
+    local_cluster_dev_execution_context = ExecutionContextConf(
+        mode=local_cluster_dev_config,
+        image=workflow_image,
+        tag=git_branch,
+        version=f"{repo_name}-{git_branch}-{git_short_sha}-local-{random_alphanumeric_suffix()}",
+    )
+
+    # Local Cluster Prod
+    local_cluster_prod_execution_context = ExecutionContextConf(
+        mode=local_cluster_prod_config,
+        image=workflow_image,
+        tag=git_short_sha,
+        version=f"{repo_name}-{git_branch}-{git_short_sha}",
+    )
+
+    # Remote Dev
+    remote_dev_execution_context = ExecutionContextConf(
+        mode=remote_dev_config,
         image=workflow_image,
         tag=git_branch,
         version=f"{repo_name}-{git_branch}-{git_short_sha}-dev-{random_alphanumeric_suffix()}",
     )
-    prod_execution_context = ContextConf(
-        mode=ExecutionMode.PROD,
-        # mode="prod",
+
+    # Remote Prod
+    remote_prod_execution_context = ExecutionContextConf(
+        mode=remote_prod_config,
         image=workflow_image,
         tag=git_short_sha,
         version=f"{repo_name}-{git_branch}-{git_short_sha}",
@@ -289,9 +409,20 @@ def main() -> None:
 
     # define the execution_context store
     execution_context_store = store(group="execution_context")
-    execution_context_store(local_execution_context, name="local")
-    execution_context_store(dev_execution_context, name="dev")
-    execution_context_store(prod_execution_context, name="prod")
+
+    execution_context_store(local_shell_execution_context, name="local_shell")
+    execution_context_store(
+        local_cluster_dev_execution_context, name="local_cluster_dev"
+    )
+    execution_context_store(
+        local_cluster_prod_execution_context, name="local_cluster_prod"
+    )
+    execution_context_store(remote_dev_execution_context, name="remote_dev")
+    execution_context_store(remote_prod_execution_context, name="remote_prod")
+
+    # execution_context_store(local_execution_context, name="local")
+    # execution_context_store(dev_execution_context, name="dev")
+    # execution_context_store(prod_execution_context, name="prod")
 
     # define the entity_config store
     entity_config_store = store(group="entity_config")
@@ -304,7 +435,7 @@ def main() -> None:
 
     hydra_defaults = [
         "_self_",
-        {"execution_context": "dev"},
+        {"execution_context": "remote_dev"},
         {"entity_config": "lrwine_training_workflow"},
     ]
     logger.debug(f"hydra_defaults: {hydra_defaults}")
@@ -408,3 +539,30 @@ if __name__ == "__main__":
         parameters are stored in the hydra config output for reference.
     """
     main()
+
+# class ExecutionMode(str, Enum):
+#     """
+#     Enumerates the possible execution modes for a workflow.
+
+#     Attributes:
+#         LOCAL: Represents a local execution mode, where the workflow is executed
+#         locally without remote registration.
+#         DEV: Represents a development execution mode, where the workflow is
+#         executed remotely for development purposes. This mode is used for
+#         testing workflow code changes remotely without needing to rebuild and
+#         push the container image so long as one with the current branch tag
+#         already exists.
+#         PROD: Represents a production execution mode, where the workflow is
+#         registered and executed remotely, intended for production or continuous
+#         integration (CI) environments. The image tag is set to the git commit
+#         short SHA.
+
+#     TODO: python >=3.11, use StrEnum with auto() values
+#     """
+
+#     LOCAL = "LOCAL"
+#     DEV = "DEV"
+#     PROD = "PROD"
+
+#     def __str__(self):
+#         return self.value
