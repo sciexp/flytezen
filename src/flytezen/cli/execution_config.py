@@ -1,22 +1,3 @@
-"""
-Constructs configurations for each leaf node marked with a `#` in the supported
-execution config tree:
-
-    execution_config = {
-        "LOCAL": {
-            "SHELL": "LOCAL_SHELL", #
-            "CLUSTER": {
-                "DEV": "LOCAL_CLUSTER_DEV", #
-                "PROD": "LOCAL_CLUSTER_PROD" #
-            }
-        },
-        "REMOTE": {
-            "DEV": "REMOTE_DEV", #
-            "PROD": "REMOTE_PROD" #
-        }
-    }
-"""
-
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -51,6 +32,25 @@ class LocalConfig:
 
 @dataclass
 class ExecutionMode:
+    """
+    Constructs configurations for each leaf node marked with a `#` in the supported
+    execution config tree:
+
+        execution_config = {
+            "LOCAL": {
+                "SHELL": "LOCAL_SHELL", #
+                "CLUSTER": {
+                    "DEV": "LOCAL_CLUSTER_DEV", #
+                    "PROD": "LOCAL_CLUSTER_PROD" #
+                }
+            },
+            "REMOTE": {
+                "DEV": "REMOTE_DEV", #
+                "PROD": "REMOTE_PROD" #
+            }
+        }
+    """
+
     location: ExecutionLocation = field(
         default_factory=lambda: ExecutionLocation.remote
     )
