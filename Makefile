@@ -19,9 +19,9 @@ help: ## Display this help. (Default)
 help_sort: ## Display alphabetized version of help.
 	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-#---------
-# flytezen
-#---------
+#--------
+# package
+#--------
 
 test: ## Run tests. See pyproject.toml for configuration.
 	poetry run pytest
@@ -44,16 +44,37 @@ typecheck: ## Run typechecker
 # local dev cluster
 #------------------
 
+local_cluster_install: ## Install localctl CLI to manage local dev cluster.
+	@(which localctl > /dev/null && echo "\nlocalctl already installed\n") || \
+	(cd ./scripts && ./localctl install) && \
+	which localctl && localctl -h
+
+local_cluster_start: ## Start local dev cluster.
+	@localctl start
+
+local_cluster_stop: ## Stop local dev cluster.
+	@localctl stop
+
+local_cluster_info: ## Print local dev cluster info.
+	@localctl info
+
+local_cluster_help: ## Print local dev cluster help.
+	@localctl -h
+
+local_cluster_remove: ## Remove local dev cluster.
+	@localctl -v remove
+
+# make -n build_local_image WORKFLOW_IMAGE=localhost:30000/flytezen
 build_local_image: ## Build local image.
-	@echo "building image: $(WORKFLOW_IMAGE):$(GIT_BRANCH)"
+	@echo "building image: $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)"
 	@echo
-	docker images -a $(WORKFLOW_IMAGE)
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
 	@echo
-	docker build -t $(WORKFLOW_IMAGE):$(GIT_BRANCH) -f $(ACTIVE_DOCKERFILE) .
+	docker build -t $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH) -f $(ACTIVE_DOCKERFILE) .
 	@echo
-	docker push $(WORKFLOW_IMAGE):$(GIT_BRANCH)
+	docker push $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME):$(GIT_BRANCH)
 	@echo
-	docker images -a $(WORKFLOW_IMAGE)
+	docker images -a $(LOCAL_CONTAINER_REGISTRY)/$(GH_REPO_NAME)
 
 #---------------
 # workflow setup
