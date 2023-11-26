@@ -102,6 +102,7 @@ EOF
 
 start_sandbox() {
     echo "Setting up the Flyte Sandbox..."
+    mkdir -p "$HOME"/.flyte/sandbox
     # Pin version with sha256 tags from
     # https://github.com/flyteorg/flyte/pkgs/container/flyte-sandbox-bundled
     # tag=sha-fa49d3bfcdc081328e2f1514fd513ec46fdbf734
