@@ -69,7 +69,7 @@ def generate_entity_configs(
         `entity_store` with configurations for each entity of type EntityTypes.
     """
     parent_module = importlib.import_module(parent_module_path)
-    EntityTypes = Union[WorkflowBase, PythonTask]
+    EntityTypes = (WorkflowBase, PythonTask)
 
     # iterate over submodules in the parent module
     for submodule_info in pkgutil.iter_modules(
@@ -81,10 +81,10 @@ def generate_entity_configs(
 
         # import entities that are instances of EntityTypes
         entities = inspect.getmembers(
-            # TODO: validate that PythonTasks function as expected
-            # submodule, lambda member: isinstance(member, EntityTypes.__args__)
             submodule,
-            lambda member: isinstance(member, WorkflowBase),
+            # TODO: validate that PythonTasks function as expected
+            lambda member: isinstance(member, EntityTypes)
+            # lambda member: isinstance(member, WorkflowBase),
         )
 
         for entity_name, entity in entities:
@@ -263,6 +263,12 @@ def generate_hydra_config() -> HydraConf:
                   * `${hydra.help.app_name} -c job entity_config==example_wf`
                   # This example will fail if you specify an entity_config with different inputs.
                   * `${hydra.help.app_name} -c job entity_config.inputs._args_.0.logistic_regression.max_iter=1200`
+                  * `${hydra.help.app_name} -c job \\
+                       execution_context=local_cluster_dev \\
+                       entity_config=lrwine_process_data \\
+                       entity_config.inputs._args_.0.data.data="[[12.0, 0],[13.0, 1],[9.5, 2]]" \\
+                       entity_config.inputs._args_.0.data.columns="[ash, target]"`
+
 
                 This will generate `== Config ==` above resolved in context of the command line overrides.
                 Removing the `-c job` flag will execute the workflow with the specified configuration.
