@@ -16,6 +16,8 @@ from flytekit.configuration import (
     ImageConfig,
     SerializationSettings,
 )
+from flytekit.core.base_task import PythonTask
+from flytekit.core.workflow import WorkflowBase
 from flytekit.remote import FlyteRemote
 from hydra_zen import ZenStore, make_config, make_custom_builds_fn, to_yaml, zen
 from omegaconf import DictConfig
@@ -85,7 +87,7 @@ def handle_local_execution(exec_mode, execution_context, entity, entity_config):
     if exec_mode.local_config.mode == LocalMode.shell:
         # https://github.com/flyteorg/flytekit/blob/dc9d26bfd29d7a3482d1d56d66a806e8fbcba036/flytekit/clis/sdk_in_container/run.py#L477
         output = entity(**entity_config.inputs)
-        logger.info(f"Workflow output:\n\n{output}\n")
+        logger.info(f"Output:\n\n{output}\n")
         return True
 
     elif exec_mode.local_config.mode == LocalMode.cluster:
@@ -172,11 +174,18 @@ def get_serialization_settings(
 def register_and_execute_workflow(
     remote, entity, entity_config, execution_context, serialization_settings
 ):
-    remote.register_workflow(
-        entity=entity,
-        serialization_settings=serialization_settings,
-        version=execution_context.version,
-    )
+    if isinstance(entity, WorkflowBase):
+        remote.register_workflow(
+            entity=entity,
+            serialization_settings=serialization_settings,
+            version=execution_context.version,
+        )
+    elif isinstance(entity, PythonTask):
+        remote.register_task(
+            entity=entity,
+            serialization_settings=serialization_settings,
+            version=execution_context.version,
+        )
     execution = remote.execute(
         entity=entity,
         inputs=entity_config.inputs,
@@ -389,8 +398,13 @@ def main() -> None:
 
     hydra_defaults = [
         "_self_",
+        # test remote workflow execution
         {"execution_context": "remote_dev"},
         {"entity_config": "lrwine_training_workflow"},
+
+        # # test local cluster task execution
+        # {"execution_context": "local_cluster_dev"},
+        # {"entity_config": "lrwine_process_data"},
     ]
     logger.debug(f"hydra_defaults: {hydra_defaults}")
 
@@ -484,6 +498,10 @@ if __name__ == "__main__":
         > flytezen \
             entity_config.inputs._args_.0.logistic_regression.C=0.4 \
             entity_config.inputs._args_.0.logistic_regression.max_iter=1200
+        > flytezen execution_context=local_cluster_dev \
+            entity_config=lrwine_process_data \
+            entity_config.inputs._args_.0.data.data=[[12.0, 0],[13.0, 1],[9.5, 2]] \
+            entity_config.inputs._args_.0.data.columns="[ash, target]"
         > flytezen \
             --multirun entity_config.inputs._args_.0.logistic_regression.C=0.2,0.5
 
