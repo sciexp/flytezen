@@ -3574,6 +3574,16 @@ docs = ["sphinx (!=5.2.0,!=5.2.0.post0,!=7.2.5)", "sphinx-rtd-theme"]
 test = ["flaky", "pretend", "pytest (>=3.0.1)"]
 
 [[package]]
+name = "pyperclip"
+version = "1.8.2"
+description = "A cross-platform clipboard module for Python. (Only handles plain text for now.)"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyperclip-1.8.2.tar.gz", hash = "sha256:105254a8b04934f0bc84e9c24eb360a591aaf6535c9def5f29d92af107a9bf57"},
+]
+
+[[package]]
 name = "pyright"
 version = "1.1.336"
 description = "Command line wrapper for pyright"
@@ -5016,4 +5026,4 @@ test = ["pytest", "pytest-asyncio", "pytest-cov", "xdoctest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "9806f342428d114179183b4709f850330657ae0fb264f1d4721bc41506566168"
+content-hash = "ff849e502cdf502a101e64c361717ce308b645cba8c96a2ece84c523fff20fcf"
