@@ -5,6 +5,7 @@ import sys
 import tempfile
 from dataclasses import dataclass, field
 
+import pyperclip
 import rich.syntax
 import rich.tree
 from dataclasses_json import dataclass_json
@@ -150,7 +151,7 @@ def get_serialization_settings(
             _, upload_url = remote.fast_package(
                 pathlib.Path(execution_context.package_path), output=tmp_dir
             )
-        logger.info(f"Workflow package uploaded to: {upload_url}")
+        logger.info(f"Workflow package uploaded to:\n\n{upload_url}\n")
         return SerializationSettings(
             image_config=image_config,
             fast_serialization_settings=FastSerializationSettings(
@@ -183,9 +184,16 @@ def register_and_execute_workflow(
         execution_name_prefix=execution_context.version,
         wait=False,
     )
+    execution_url = remote.generate_console_url(execution)
+
+    try:
+        pyperclip.copy(execution_url)
+    except Exception as e:
+        logger.warning(f"Failed to copy execution URL to clipboard: {e}")
     logger.info(
-        f"Execution submitted: {execution}\nExecution url: {remote.generate_console_url(execution)}\n"
+        f"Execution submitted: {execution}\nExecution url:\n\n{execution_url}\n"
     )
+
     if execution_context.wait:
         wait_for_workflow_completion(execution, remote, logger)
 
