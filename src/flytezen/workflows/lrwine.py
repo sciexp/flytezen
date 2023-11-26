@@ -54,6 +54,41 @@ LogisticRegressionInterface = make_dataclass(
 LogisticRegressionInterface.__module__ = __name__
 
 
+sample_columns = [
+    "alcohol",
+    "malic_acid",
+    "ash",
+    "alcalinity_of_ash",
+    "magnesium",
+    "total_phenols",
+    "flavanoids",
+    "nonflavanoid_phenols",
+    "proanthocyanins",
+    "color_intensity",
+    "hue",
+    "od280/od315_of_diluted_wines",
+    "proline",
+    "target",
+]
+
+sample_data = [
+    [13.0, 1.5, 2.3, 15.0, 110, 2.5, 3.0, 0.3, 1.5, 4.0, 1.0, 3.0, 1000, 0],
+    [14.0, 1.6, 2.4, 16.0, 120, 2.6, 3.1, 0.4, 1.6, 5.0, 1.1, 3.1, 1100, 1],
+    [12.5, 1.4, 2.2, 14.0, 100, 2.4, 2.9, 0.2, 1.4, 3.5, 0.9, 2.9, 900, 2],
+]
+
+# sample_columns = [
+#     "alcohol",
+#     "target",
+# ]
+
+# sample_data = [
+#     [13.0, 0],
+#     [14.0, 1],
+#     [12.5, 2],
+# ]
+
+
 @task
 def get_data() -> pd.DataFrame:
     """
@@ -66,7 +101,9 @@ def get_data() -> pd.DataFrame:
 
 
 @task
-def process_data(data: pd.DataFrame) -> pd.DataFrame:
+def process_data(
+    data: pd.DataFrame = pd.DataFrame(data=sample_data, columns=sample_columns),
+) -> pd.DataFrame:
     """
     Simplify the task from a 3-class to a binary classification problem.
     """
@@ -75,7 +112,10 @@ def process_data(data: pd.DataFrame) -> pd.DataFrame:
 
 @task
 def train_model(
-    data: pd.DataFrame, logistic_regression: LogisticRegressionInterface
+    data: pd.DataFrame = pd.DataFrame(data=sample_data, columns=sample_columns),
+    logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(
+        max_iter=1200
+    ),
 ) -> JoblibSerializedFile:
     """
     Train a model on the wine dataset.
@@ -106,6 +146,12 @@ def training_workflow(
         logistic_regression=logistic_regression,
     )
 
+
+if __name__ == "__main__":
+    # Execute the workflow, simply by invoking it like a function and passing in
+    # the necessary parameters
+    print(f"Running process_data() { process_data() }")
+    print(f"Running training_workflow() { training_workflow() }")
 
 # The following can be used to test dynamic dataclass construction
 # in the case where there are multiple inputs of distinct types,
