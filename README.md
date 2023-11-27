@@ -25,6 +25,9 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   │   ├── CI.yaml
 │   │   └── build-images.yaml
 │   └── .gitkeep
+├── .vscode
+│   ├── launch.json
+│   └── tasks.json
 ├── containers
 │   ├── Dockerfile
 │   └── pkg.Dockerfile
@@ -61,7 +64,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ├── poetry.lock
 └── pyproject.toml
 
-14 directories, 38 files
+15 directories, 39 files
 ```
 
 </details>
