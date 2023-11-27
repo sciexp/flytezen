@@ -261,8 +261,21 @@ def generate_hydra_config() -> HydraConf:
 
                   * `${hydra.help.app_name} -c job execution_context=prod`
                   * `${hydra.help.app_name} -c job entity_config==example_wf`
-                  # This example will fail if you specify an entity_config with different inputs.
-                  * `${hydra.help.app_name} -c job entity_config.inputs._args_.0.logistic_regression.max_iter=1200`
+                  # The inputs arguments in the following example must correspond
+                  # to those supported by the specified entity_config.
+                  * `${hydra.help.app_name} -c job \\
+                       entity_config=lrwine_training_workflow \\
+                       entity_config.inputs._args_.0.logistic_regression.max_iter=1200`
+                  # The following two examples are only meant for task testing.
+                  # This example only works in the local_shell execution context.
+                  # See: https://github.com/flyteorg/flyte/issues/4275
+                  #      https://github.com/flyteorg/flyte/issues/1312
+                  * `${hydra.help.app_name} -c job \\
+                       execution_context=local_shell \\
+                       entity_config=lrwine_process_data \\
+                       entity_config.inputs._args_=[]"`
+                  # This will fail without specifying the inputs as it does not
+                  # automatically instantiate the default arguments of the task.
                   * `${hydra.help.app_name} -c job \\
                        execution_context=local_cluster_dev \\
                        entity_config=lrwine_process_data \\
