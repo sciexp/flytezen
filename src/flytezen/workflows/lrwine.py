@@ -54,6 +54,25 @@ LogisticRegressionInterface = make_dataclass(
 LogisticRegressionInterface.__module__ = __name__
 
 
+# The following can be used to test dynamic dataclass construction
+# with multiple dataclasses of distinct types.
+# from sklearn.linear_model import LinearRegression
+
+# linear_regression_custom_types: Dict[str, Tuple[Type,Any]] = {
+#     "n_jobs": (Optional[int], None),
+# }
+# linear_regression_fields = create_dataclass_from_callable(
+#     LinearRegression, linear_regression_custom_types
+# )
+
+# LinearRegressionInterface = make_dataclass(
+#     "LinearRegressionInterface",
+#     linear_regression_fields,
+#     bases=(DataClassJSONMixin,),
+# )
+# LinearRegressionInterface.__module__ = __name__
+
+
 sample_columns = [
     "alcohol",
     "malic_acid",
@@ -135,6 +154,7 @@ def training_workflow(
     logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(
         max_iter=2000
     ),
+    # linear_regression: LinearRegressionInterface = LinearRegressionInterface(),
 ) -> JoblibSerializedFile:
     """
     Put all of the steps together into a single workflow.
@@ -176,7 +196,7 @@ if __name__ == "__main__":
 #         max_iter=2000
 #     ),
 #     linear_regression: LinearRegressionInterface = LinearRegressionInterface(),
-# ) -> LogisticRegression:
+# ) -> JoblibSerializedFile:
 #     """Put all of the steps together into a single workflow."""
 #     data = get_data()
 #     processed_data = process_data(data=data)
