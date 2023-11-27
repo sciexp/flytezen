@@ -403,7 +403,8 @@ def main() -> None:
         {"entity_config": "lrwine_training_workflow"},
 
         # # test local cluster task execution
-        # {"execution_context": "local_cluster_dev"},
+        # # {"execution_context": "local_cluster_dev"},
+        # {"execution_context": "local_shell"},
         # {"entity_config": "lrwine_process_data"},
     ]
     logger.debug(f"hydra_defaults: {hydra_defaults}")
@@ -491,17 +492,26 @@ if __name__ == "__main__":
 
     Example usage:
         > flytezen -h
+        > flytezen -c job
         > flytezen
         > flytezen \
-            execution_context=dev \
+            execution_context=remote_dev \
             entity_config=lrwine_training_workflow
         > flytezen \
             entity_config.inputs._args_.0.logistic_regression.C=0.4 \
             entity_config.inputs._args_.0.logistic_regression.max_iter=1200
+        # The _args_=[] only works for local_shell execution of tasks
+        > flytezen \
+            execution_context=local_shell \
+            entity_config=lrwine_process_data \
+            entity_config.inputs._args_=[]
+        # For remote execution of tasks, stub inputs must be provided.
+        # This is only meant for testing purposes.
         > flytezen execution_context=local_cluster_dev \
             entity_config=lrwine_process_data \
             entity_config.inputs._args_.0.data.data=[[12.0, 0],[13.0, 1],[9.5, 2]] \
             entity_config.inputs._args_.0.data.columns="[ash, target]"
+        # TODO: update to use joblib hydra execution backend
         > flytezen \
             --multirun entity_config.inputs._args_.0.logistic_regression.C=0.2,0.5
 
