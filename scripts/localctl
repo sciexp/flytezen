@@ -50,22 +50,22 @@ install_docker_mac() {
 display_info() {
     cat << EOF
 
-🔍 Current status of Flyte Sandbox container:
-$($CONTAINER_CMD container ls --filter name=flyte-sandbox)
+🔍 Current status of local cluster container:
+$($CONTAINER_CMD container ls --filter name=local-cluster)
 
-🔍 Current status of Flyte Sandbox volume:
-$($CONTAINER_CMD volume ls --filter name=flyte-sandbox)
+🔍 Current status of local cluster volume:
+$($CONTAINER_CMD volume ls --filter name=local-cluster)
 
-🔍 Detailed information on Flyte Sandbox volume:
-$($CONTAINER_CMD volume inspect flyte-sandbox || true)
+🔍 Detailed information on local cluster volume:
+$($CONTAINER_CMD volume inspect local-cluster || true)
 
-🔍 Browse Flyte Sandbox volume from another image:
+🔍 Browse local cluster volume from another image:
 
-    $CONTAINER_CMD run --rm -it -v flyte-sandbox:/data nixery.dev/shell/which/bat/less/tree bash
+    $CONTAINER_CMD run --rm -it -v local-cluster:/data nixery.dev/shell/which/bat/less/tree bash
 
 📒️ To check the logs:
 
-    $CONTAINER_CMD logs -f flyte-sandbox
+    $CONTAINER_CMD logs -f local-cluster
 
 🕸  Cluster services:
 
@@ -81,7 +81,7 @@ see /kubernetes-dashboard /console /minio/{login,browser} routes at HTTP port
 🖥  The Kubernetes Dashboard should be available at http://localhost:30080/kubernetes-dashboard
 🖥  The Flyte UI should be available at http://localhost:30080/console
 
-🐋 The Flyte sandbox ships with a Docker registry.
+🐋 The local cluster ships with a Docker registry.
 🐋 Tag and push custom workflow images to localhost:30000
 
 📂 The local S3 server provided by the Minio API is hosted on localhost:30002.
@@ -101,7 +101,7 @@ EOF
 
 
 start_sandbox() {
-    echo "Setting up the Flyte Sandbox..."
+    echo "Setting up the local cluster..."
     mkdir -p "$HOME"/.flyte/sandbox
     # Pin version with sha256 tags from
     # https://github.com/flyteorg/flyte/pkgs/container/flyte-sandbox-bundled
@@ -111,8 +111,8 @@ start_sandbox() {
     # master@712ee8edd60d9b9494a392da7a7b1726bfb24896
     # see flytectl demo start --dryRun for commands
     FLYTE_SANDBOX_IMAGE="cr.flyte.org/flyteorg/flyte-sandbox-bundled:latest"
-    $CONTAINER_CMD container rm flyte-sandbox --force
-    $CONTAINER_CMD volume create flyte-sandbox
+    $CONTAINER_CMD container rm local-cluster --force
+    $CONTAINER_CMD volume create local-cluster
     $CONTAINER_CMD pull $FLYTE_SANDBOX_IMAGE
 
     # see /console /kubernetes-dashboard /minio/{login,browser} routes at HTTP port
@@ -138,25 +138,25 @@ start_sandbox() {
         --env K3S_KUBECONFIG_OUTPUT=/var/lib/flyte/config/kubeconfig \
         --mount type=bind,source="$HOME"/.flyte,target=/etc/rancher/ \
         --mount type=bind,source="$HOME"/.flyte/sandbox,target=/var/lib/flyte/config \
-        --mount type=volume,source=flyte-sandbox,target=/var/lib/flyte/storage \
-        --name flyte-sandbox \
+        --mount type=volume,source=local-cluster,target=/var/lib/flyte/storage \
+        --name local-cluster \
         $FLYTE_SANDBOX_IMAGE
-    $CONTAINER_CMD start flyte-sandbox
+    $CONTAINER_CMD start local-cluster
     display_info
-    echo "Flyte Sandbox started successfully."
+    echo "local cluster started successfully."
 }
 
 stop_sandbox() {
-    echo "Stopping Flyte Sandbox..."
-    $CONTAINER_CMD stop flyte-sandbox
-    $CONTAINER_CMD container rm flyte-sandbox --force
-    echo "Flyte Sandbox stopped."
+    echo "Stopping local cluster..."
+    $CONTAINER_CMD stop local-cluster
+    $CONTAINER_CMD container rm local-cluster --force
+    echo "local cluster stopped."
 }
 
 remove_sandbox() {
-    echo "Removing Flyte Sandbox data..."
-    $CONTAINER_CMD volume rm flyte-sandbox
-    echo "Flyte Sandbox data removed."    
+    echo "Removing local cluster data..."
+    $CONTAINER_CMD volume rm local-cluster
+    echo "local cluster data removed."    
 }
 
 install_local_bin() {
@@ -195,16 +195,16 @@ Examples:
 ❯ localctl start     # clean cluster
 
 Commands:
-  start   Start the Flyte cluster
-  stop    Stop the Flyte cluster
-  remove  Remove Flyte cluster data (stops cluster)
-  info    Display Flyte cluster information (alias: i)
+  start   Start the local cluster
+  stop    Stop the local cluster
+  remove  Remove local cluster data (stops cluster)
+  info    Display local cluster information (alias: i)
   help    Display this help message (alias: h)
   install Install localctl to '/usr/local/bin'
   version Print version information
 
 Options:
-  --info    Display Flyte cluster information (alias: -i)
+  --info    Display local cluster information (alias: -i)
   --help    Display this help message (alias: -h)
   --verbose Enable 'set -x' to print commands (alias: -v)
   --version Print version information
