@@ -1,4 +1,5 @@
 from dataclasses import asdict, make_dataclass
+from datetime import timedelta
 from pprint import pformat
 from typing import Any, Dict, Optional, Tuple, Type
 
@@ -85,7 +86,7 @@ sample_data = [
 ]
 
 
-@task
+@task(cache=True, cache_version="1.0", retries=3, timeout=timedelta(minutes=10))
 def get_data() -> pd.DataFrame:
     """
     Get the wine dataset.
@@ -96,7 +97,7 @@ def get_data() -> pd.DataFrame:
     return load_wine(as_frame=True).frame
 
 
-@task
+@task(cache=True, cache_version="1.0", retries=3, timeout=timedelta(minutes=10))
 def process_data(
     data: pd.DataFrame = pd.DataFrame(data=sample_data, columns=sample_columns),
 ) -> pd.DataFrame:
@@ -106,7 +107,7 @@ def process_data(
     return data.assign(target=lambda x: x["target"].where(x["target"] == 0, 1))
 
 
-@task
+@task(cache=True, cache_version="1.0", retries=3, timeout=timedelta(minutes=10))
 def train_model(
     data: pd.DataFrame = pd.DataFrame(data=sample_data, columns=sample_columns),
     logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(
