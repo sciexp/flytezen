@@ -88,10 +88,10 @@ sample_data = [
 
 
 @task(
-    cache=True,
+    cache=False,
     cache_version="0.1.0",
     retries=3,
-    interruptible=True,
+    interruptible=False,
     timeout=timedelta(minutes=20),
     requests=Resources(cpu="200m", mem="400Mi", ephemeral_storage="1Gi", gpu="1"),
     accelerator=T4,
