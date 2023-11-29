@@ -62,6 +62,8 @@ jobs:
           --generate-name="${GITHUB_REPOSITORY_NAME_PART}-build-${GITHUB_SHA_SHORT}-" \
           -p imageName1="${GITHUB_REPOSITORY_NAME_PART}" \
           -p containerFilePath1="containers/pkg.Dockerfile" \
+          -p imageName2="${GITHUB_REPOSITORY_NAME_PART}-gpu" \
+          -p containerFilePath2="containers/gpu.Dockerfile" \
           -p appName="${GITHUB_REPOSITORY_NAME_PART}" \
           -p branch="${GITHUB_REF_NAME}" \
           -p shortSha="${GITHUB_SHA_SHORT}" \
