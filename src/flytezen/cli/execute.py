@@ -129,8 +129,11 @@ def handle_cluster_execution(
         default_domain=execution_context.domain,
     )
     logger.debug(f"Remote context:\n\n{remote.context}\n")
-    image_config = ImageConfig.auto(
-        img_name=f"{execution_context.image}:{execution_context.tag}"
+    image_config = ImageConfig.from_images(
+        default_image=f"{execution_context.image}:{execution_context.tag}",
+        m={
+            "gpu": f"{execution_context.image}-gpu:{execution_context.tag}",
+        },
     )
 
     serialization_settings = get_serialization_settings(
@@ -401,7 +404,6 @@ def main() -> None:
         # test remote workflow execution
         {"execution_context": "remote_dev"},
         {"entity_config": "lrwine_training_workflow"},
-
         # # test local cluster task execution
         # # {"execution_context": "local_cluster_dev"},
         # {"execution_context": "local_shell"},

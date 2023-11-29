@@ -8,7 +8,7 @@ from flytekit import task, workflow
 
 
 @task
-def say_hello(name: str="testing say_hello") -> str:
+def say_hello(name: str = "testing say_hello") -> str:
     """
     A simple Flyte task to say "hello".
 
@@ -19,7 +19,7 @@ def say_hello(name: str="testing say_hello") -> str:
 
 
 @task
-def greeting_length(greeting: str="ninechars") -> int:
+def greeting_length(greeting: str = "ninechars") -> int:
     """
     A task the counts the length of a greeting.
     """
