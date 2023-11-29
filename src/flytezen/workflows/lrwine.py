@@ -93,7 +93,10 @@ sample_data = [
     retries=3,
     interruptible=False,
     timeout=timedelta(minutes=20),
-    requests=Resources(cpu="200m", mem="400Mi", ephemeral_storage="1Gi", gpu="1"),
+    container_image="{{.image.gpu.fqn}}:{{.image.gpu.version}}",
+    requests=Resources(
+        cpu="200m", mem="400Mi", ephemeral_storage="1Gi", gpu="1"
+    ),
     accelerator=T4,
 )
 def get_data() -> pd.DataFrame:
