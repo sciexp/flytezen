@@ -88,7 +88,7 @@ sample_data = [
 
 
 @task(
-    cache=False,
+    cache=True,
     cache_version="0.1.0",
     retries=3,
     interruptible=True,
