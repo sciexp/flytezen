@@ -30,6 +30,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   └── tasks.json
 ├── containers
 │   ├── Dockerfile
+│   ├── gpu.Dockerfile
 │   └── pkg.Dockerfile
 ├── src
 │   ├── flytezen
@@ -64,7 +65,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ├── poetry.lock
 └── pyproject.toml
 
-15 directories, 39 files
+15 directories, 40 files
 ```
 
 </details>
