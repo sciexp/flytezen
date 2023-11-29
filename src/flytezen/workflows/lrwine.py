@@ -7,7 +7,8 @@ import joblib
 import pandas as pd
 
 # from dataclasses_json import DataClassJsonMixin as DataClassJSONMixin
-from flytekit import task, workflow
+from flytekit import Resources, task, workflow
+from flytekit.extras.accelerators import T4
 from flytekit.types.file import JoblibSerializedFile
 from mashumaro.mixins.json import DataClassJSONMixin
 from sklearn.datasets import load_wine
@@ -86,18 +87,33 @@ sample_data = [
 ]
 
 
-@task(cache=True, cache_version="1.0", retries=3, timeout=timedelta(minutes=10))
+@task(
+    cache=False,
+    cache_version="0.1.0",
+    retries=3,
+    interruptible=True,
+    timeout=timedelta(minutes=20),
+    requests=Resources(cpu="200m", mem="400Mi", ephemeral_storage="1Gi", gpu="1"),
+    accelerator=T4,
+)
 def get_data() -> pd.DataFrame:
     """
     Get the wine dataset.
     """
     # import time
 
-    # time.sleep(3600)
+    # time.sleep(7200)
     return load_wine(as_frame=True).frame
 
 
-@task(cache=True, cache_version="1.0", retries=3, timeout=timedelta(minutes=10))
+@task(
+    cache=False,
+    cache_version="0.1.0",
+    retries=3,
+    interruptible=True,
+    timeout=timedelta(minutes=10),
+    requests=Resources(cpu="200m", mem="400Mi", ephemeral_storage="1Gi"),
+)
 def process_data(
     data: pd.DataFrame = pd.DataFrame(data=sample_data, columns=sample_columns),
 ) -> pd.DataFrame:
@@ -107,7 +123,14 @@ def process_data(
     return data.assign(target=lambda x: x["target"].where(x["target"] == 0, 1))
 
 
-@task(cache=True, cache_version="1.0", retries=3, timeout=timedelta(minutes=10))
+@task(
+    cache=False,
+    cache_version="0.1.0",
+    retries=3,
+    interruptible=True,
+    timeout=timedelta(minutes=10),
+    requests=Resources(cpu="200m", mem="400Mi", ephemeral_storage="1Gi"),
+)
 def train_model(
     data: pd.DataFrame = pd.DataFrame(data=sample_data, columns=sample_columns),
     logistic_regression: LogisticRegressionInterface = LogisticRegressionInterface(
