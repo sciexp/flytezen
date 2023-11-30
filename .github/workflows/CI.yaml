@@ -116,12 +116,6 @@ jobs:
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v4
 
-    # - name: Install flytectl
-    #   uses: unionai-oss/flytectl-setup-action@master
-    #   with:
-    #     # https://github.com/flyteorg/flytectl/releases
-    #     version: '0.8.0'
-  
     - name: Setup environment
       uses: ./.github/actions/setup_environment
       with:
