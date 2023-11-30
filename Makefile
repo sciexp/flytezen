@@ -10,6 +10,9 @@ include $(ENV_PREFIX)/.env
 export
 endif
 
+GIT_SHORT_SHA = $(shell git rev-parse --short HEAD)
+GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
+
 ##@ Utility
 help: ## Display this help. (Default)
 # based on "https://gist.github.com/prwhite/8168133?permalink_comment_id=4260260#gistcomment-4260260"
@@ -130,8 +133,6 @@ get_workflows: ## Get list of all workflows in a project-domain pair.
 		--project $(WORKFLOW_PROJECT) \
 		--domain $(WORKFLOW_DOMAIN)
 
-GIT_SHORT_SHA = $(shell git rev-parse --short HEAD)
-GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 WORKFLOW_VERSION ?= $(GH_REPO_NAME)-$(GIT_BRANCH)-$(GIT_SHORT_SHA)
 
 get_workflow: ## Get workflow representation ( dot, yaml, doturl, json ).
