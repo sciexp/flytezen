@@ -109,11 +109,6 @@ jobs:
         FLYTECTL_CONFIG: ${{ secrets.FLYTECTL_CONFIG }}
         FLYTE_OAUTH_CLIENT_SECRET: ${{ secrets.FLYTE_OAUTH_CLIENT_SECRET }}
         WORKFLOW_IMAGE: ${{ vars.WORKFLOW_IMAGE }}
-        # WORKFLOW_PACKAGE_PATH: ${{ vars.WORKFLOW_PACKAGE_PATH }}
-        # WORKFLOW_IMPORT_PATH: ${{ vars.WORKFLOW_IMPORT_PATH }}
-        # WORKFLOW_NAME: ${{ vars.WORKFLOW_NAME }}
-        # WORKFLOW_PROJECT: ${{ vars.WORKFLOW_PROJECT }}
-        # WORKFLOW_DOMAIN: ${{ vars.WORKFLOW_DOMAIN }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
