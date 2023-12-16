@@ -4909,9 +4909,9 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 dev = ["black", "jupyter_contrib_nbextensions", "jupytext", "mkdocs-jupyter", "mkdocs-material", "mkdocstrings", "mypy", "notebook", "pyright", "pytest", "pytest-asyncio", "pytest-cov", "ruff", "xdoctest"]
 docs = ["jupyter_contrib_nbextensions", "jupytext", "mkdocs-jupyter", "mkdocs-material", "mkdocstrings", "notebook"]
 lint = ["black", "mypy", "pyright", "ruff"]
-test = ["pytest", "pytest-asyncio", "pytest-cov", "xdoctest"]
+test = ["poethepoet", "pytest", "pytest-asyncio", "pytest-cov", "xdoctest"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "3.10.13"
-content-hash = "27d1c5032fd595c9bff2f7feb772acd26ec12051910a633d47b35b68242aeacd"
+content-hash = "79c005f0d16ae33153f584fb46550878767559c98dc8eae903131dd130b469f7"

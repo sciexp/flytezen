@@ -107,6 +107,7 @@ lint = [
  ]
 
 test = [
+  "poethepoet",
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
