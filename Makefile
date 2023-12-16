@@ -206,6 +206,7 @@ register_workflows: ## Register workflows.
 package_and_register: ## Package and register workflows.
 package_and_register: package_workflows register_workflows 
 
+
 #-------------------
 # workflow execution
 #-------------------
@@ -258,6 +259,7 @@ run_cli_hp_config_local: ## Dispatch unregistered run from flytekit cli
 	$(WORKFLOW_FILE) \
 	$(WORKFLOW_NAME) \
 	--hyperparameters $(WORKFLOW_FILE_WORKFLOW_ARGS)
+
 
 #-------------
 # CI
@@ -316,6 +318,7 @@ tag_images: ## Add tag to existing images, (default main --> branch, override wi
 list_gcr_workflow_image_tags: ## List images in gcr.
 	gcloud container images list --repository=$(GCP_ARTIFACT_REGISTRY_PATH)                                                                                                                             │
 	gcloud container images list-tags $(WORKFLOW_IMAGE)
+
 
 #----
 # nix
