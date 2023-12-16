@@ -15,7 +15,7 @@
 version: 1
 metadata:
   content_hash:
-    linux-64: c901f7e484cbb51dee24a0326e98740853da8d0caabe10f2e95ab8ad79ffbbfd
+    linux-64: 526f08ec5b0cbd53bfc27cf87498e6497064e0438fb77395ccd9cbe7d0448569
   channels:
   - url: conda-forge
     used_env_vars: []
@@ -1755,6 +1755,18 @@ package:
     sha256: 1910c5306c6aa5bcbd623c3c930c440e9c77a5a019008e1487810e3c1d3716cb
   category: main
   optional: false
+- name: libnl
+  version: 3.9.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    libgcc-ng: '>=12'
+  url: https://conda.anaconda.org/conda-forge/linux-64/libnl-3.9.0-hd590300_0.conda
+  hash:
+    md5: d27c451db4f1d3c983c78167d2fdabc2
+    sha256: aae03117811e704c3f3666e8374dd2e632f1d78bef0c27330e7298b24004819e
+  category: main
+  optional: false
 - name: libnsl
   version: 2.0.1
   manager: conda
@@ -2276,6 +2288,47 @@ package:
     sha256: 435829a03e1c6009f013f29bb83de8b876c388820bf8cf69a7baeec25f6a3563
   category: main
   optional: false
+- name: platformdirs
+  version: 4.1.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    python: '>=3.8'
+  url: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.1.0-pyhd8ed1ab_0.conda
+  hash:
+    md5: 45a5065664da0d1dfa8f8cd2eaf05ab9
+    sha256: 9e4ff17ce802159ed31344eb913eaa877688226765b77947b102b42255a53853
+  category: main
+  optional: false
+- name: plumbum
+  version: 1.8.2
+  manager: conda
+  platform: linux-64
+  dependencies:
+    paramiko: ''
+    python: '>=3.6'
+    pywin32-on-windows: ''
+  url: https://conda.anaconda.org/conda-forge/noarch/plumbum-1.8.2-pyhd8ed1ab_0.conda
+  hash:
+    md5: 2f43a31010edd3d165fb469cac60d146
+    sha256: 2d3c92af276556de9daf5554be7c9b2be477cc5f274d64fffa22e09b075ffc56
+  category: main
+  optional: false
+- name: pooch
+  version: 1.8.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    packaging: '>=20.0'
+    platformdirs: '>=2.5.0'
+    python: '>=3.7'
+    requests: '>=2.19.0'
+  url: https://conda.anaconda.org/conda-forge/noarch/pooch-1.8.0-pyhd8ed1ab_0.conda
+  hash:
+    md5: 134b2b57b7865d2316a7cce1915a51ed
+    sha256: 51b02987370bbff28dbf782063c23e3b264aa34173b344454203cd691946e077
+  category: main
+  optional: false
 - name: portalocker
   version: 2.8.2
   manager: conda
@@ -2640,11 +2693,12 @@ package:
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
     libgcc-ng: '>=12'
+    libnl: '>=3.9.0,<4.0a0'
     libstdcxx-ng: '>=12'
-  url: https://conda.anaconda.org/conda-forge/linux-64/rdma-core-49.0-hd3aeb46_1.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/rdma-core-49.0-hd3aeb46_2.conda
   hash:
-    md5: 434d42b3ee35e1aaf6bb42d87730d1a4
-    sha256: dca608dd54c7782f15b6a99220fa1ac8f744c1e183ba69b5d0f29c5be85865b1
+    md5: 855579013120ad3078e7d5dcadb643e1
+    sha256: 3f541042f7b51484a996eab53493b9242969bc406614eba76ceecfa4f4a0822a
   category: main
   optional: false
 - name: re2
@@ -2793,7 +2847,7 @@ package:
   category: main
   optional: false
 - name: scipy
-  version: 1.11.4
+  version: 1.10.1
   manager: conda
   platform: linux-64
   dependencies:
@@ -2801,16 +2855,17 @@ package:
     libcblas: '>=3.9.0,<4.0a0'
     libgcc-ng: '>=12'
     libgfortran-ng: ''
-    libgfortran5: '>=12.3.0'
+    libgfortran5: '>=12.2.0'
     liblapack: '>=3.9.0,<4.0a0'
     libstdcxx-ng: '>=12'
-    numpy: '>=1.22.4,<2.0a0'
+    numpy: '>=1.21.6,<2.0a0'
+    pooch: ''
     python: '>=3.10,<3.11.0a0'
     python_abi: 3.10.*
-  url: https://conda.anaconda.org/conda-forge/linux-64/scipy-1.11.4-py310hb13e2d6_0.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/scipy-1.10.1-py310ha4c1d20_3.conda
   hash:
-    md5: f0063b2885bfae11324a00a693f88781
-    sha256: d465ffa50c22c0ce7472831abbb01f10411bb62d2ee3b493ff3fe3dc214765cb
+    md5: 0414d57832172f3cdcf56b5f053e177d
+    sha256: c7beb091db82a1be2fa9dafb878695b1e8bd6d7efe7764afa457cabfea2a93d3
   category: main
   optional: false
 - name: secretstorage
