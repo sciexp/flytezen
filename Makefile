@@ -272,9 +272,55 @@ list_gcr_workflow_image_tags: ## List images in gcr.
 	gcloud container images list --repository=$(GCP_ARTIFACT_REGISTRY_PATH)                                                                                                                             │
 	gcloud container images list-tags $(WORKFLOW_IMAGE)
 
-#-------------
-# system / dev
-#-------------
+#----
+# nix
+#----
+
+meta: ## Generate nix flake metadata.
+	nix flake metadata --impure
+	nix flake show --impure
+
+up: ## Update nix flake lock file.
+	nix flake update --impure --accept-flake-config
+	nix flake check --impure
+
+dup: ## Debug update nix flake lock file.
+	nix flake update --impure --accept-flake-config
+	nix flake check --show-trace --print-build-logs --impure
+
+re: ## Reload direnv.
+	direnv reload
+
+al: ## Enable direnv.
+	direnv allow
+
+devshell_info: ## Print devshell info.
+	nix build .#devShells.$(shell nix eval --impure --expr 'builtins.currentSystem').default --impure
+	nix path-info --recursive ./result
+	du -chL ./result
+	rm ./result
+
+cache: ## Push devshell to cachix
+	nix build --json \
+	.#devShells.$(shell nix eval --impure --expr 'builtins.currentSystem').default \
+	--impure \
+	--accept-flake-config | \
+	jq -r '.[].outputs | to_entries[].value' | \
+	cachix push $(CACHIX_CACHE_NAME)
+
+
+#-------
+# system
+#-------
+
+uninstall_nix: ## Uninstall nix.
+	(cat /nix/receipt.json && \
+	/nix/nix-installer uninstall) || echo "nix not found, skipping uninstall"
+
+install_nix: ## Install nix. Check script before execution: https://install.determinate.systems/nix .
+install_nix: uninstall_nix
+	@which nix > /dev/null || \
+	curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 
 install_direnv: ## Install direnv to `/usr/local/bin`. Check script before execution: https://direnv.net/ .
 	@which direnv > /dev/null || \
@@ -282,6 +328,31 @@ install_direnv: ## Install direnv to `/usr/local/bin`. Check script before execu
 	sudo install -c -m 0755 direnv /usr/local/bin && \
 	rm -f ./direnv)
 	@echo "see https://direnv.net/docs/hook.html"
+
+setup_dev: ## Setup nix development environment.
+setup_dev: install_direnv install_nix
+	@. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
+	nix profile install nixpkgs#cachix && \
+	echo "trusted-users = root $$USER" | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon && \
+	cachix use devenv
+
+cdirenv: ## !!Enable direnv in zshrc.!!
+	@if ! grep -q 'direnv hook zsh' "${HOME}/.zshrc"; then \
+		printf '\n%s\n' 'eval "$$(direnv hook zsh)"' >> "${HOME}/.zshrc"; \
+	fi
+
+cstarship: ## !!Enable starship in zshrc.!!
+	@if ! grep -q 'starship init zsh' "${HOME}/.zshrc"; then \
+		printf '\n%s\n' 'eval "$$(starship init zsh)"' >> "${HOME}/.zshrc"; \
+	fi
+
+catuin: ## !!Enable atuin in zshrc.!!
+	@if ! grep -q 'atuin init zsh' "${HOME}/.zshrc"; then \
+		printf '\n%s\n' 'eval "$$(atuin init zsh)"' >> "${HOME}/.zshrc"; \
+	fi
+
+czsh: ## !!Enable zsh with command line info and searchable history.!!
+czsh: catuin cstarship cdirenv
 
 install_flytectl: ## Install flytectl. Check script before execution: https://docs.flyte.org/ .
 	@which flytectl > /dev/null || \
@@ -370,3 +441,31 @@ approve_prs: ## Approve github pull requests from bots: PR_ENTRIES="2-5 10 12-18
 			@gh pr review $$entry --approve; \
 		fi; \
 	done
+
+CURRENT_BRANCH_OR_SHA = $(shell git symbolic-ref --short HEAD 2>/dev/null || git rev-parse HEAD)
+
+get_pr_source_branch: ## Get source branch from detached head as in PR CI checkouts.
+ifndef PR
+	$(error PR is not set. Usage: make get_pr_source_branch PR=<PR_NUMBER>)
+endif
+
+	@echo "Current Branch or SHA: $(CURRENT_BRANCH_OR_SHA)"
+
+	# The command
+	# 	gh pr checkout --detach $(PR)
+	# checks out the PR source branch commit which is NOT equivalent to checking
+	# out the staged merge commit. The latter is what occurs in PR CI checkouts
+	# which is available at `refs/pull/$(PR)/merge` and we store in $(PR)-merge
+	git fetch --force origin pull/$(PR)/merge:$(PR)-merge
+	git checkout $(PR)-merge
+
+	git fetch origin +refs/heads/*:refs/remotes/origin/*
+	PAGER=cat git log -1
+	@echo "\nExtracted Source Commit SHA:"
+	git log -1 --pretty=%B | grep -oE 'Merge [0-9a-f]{40}' | awk '{print $$2}'
+	@echo "\nExtracted Source Branch Name:"
+	source_commit_sha=$$(git log -1 --pretty=%B | grep -oE 'Merge [0-9a-f]{40}' | awk '{print $$2}') && \
+	git branch -r --contains $$source_commit_sha | grep -v HEAD | sed -n 's|origin/||p' | xargs
+
+	@echo "\nReturning to Branch or SHA: $(CURRENT_BRANCH_OR_SHA)"
+	git checkout $(CURRENT_BRANCH_OR_SHA)
