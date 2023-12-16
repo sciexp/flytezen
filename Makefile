@@ -33,15 +33,29 @@ test-cov-xml: ## Run tests with coverage
 	poetry run pytest --cov-report=xml
 
 lint: ## Run linter
-	poetry run black .
+	poetry run ruff format .
 	poetry run ruff --fix .
 
 lint-check: ## Run linter in check mode
-	poetry run black --check .
+	poetry run ruff format --check .
 	poetry run ruff .
 
 typecheck: ## Run typechecker
 	poetry run pyright
+	
+docs-build: ## Build documentation
+	poetry run mkdocs build
+
+docs-serve: ## Serve documentation
+docs-serve: docs-build
+	poetry run mkdocs serve
+
+export_pip_requirements: ## Export requirements.txt for pip.
+	poetry export \
+	--format=requirements.txt \
+	--with=test \
+	--output=requirements.txt \
+	--without-hashes
 
 #------------------
 # local dev cluster
@@ -204,6 +218,9 @@ HYDRA_OVERRIDES = $(filter-out $@,$(MAKECMDGOALS))
 .PHONY: run
 run: ## Run registered workflow in remote dev mode. (default)
 	poetry run flytezen $(HYDRA_OVERRIDES)
+
+run_dev: ## Run registered workflow in remote prod mode. (ci default)
+	poetry run flytezen execution_context=remote_dev $(HYDRA_OVERRIDES)
 
 run_prod: ## Run registered workflow in remote prod mode. (ci default)
 	poetry run flytezen execution_context=remote_prod $(HYDRA_OVERRIDES)
@@ -420,6 +437,7 @@ ghsecrets: ## Update github secrets for GH_REPO from ".env" file.
 	gh secret set FLYTE_CLUSTER_ENDPOINT --repo="$(GH_REPO)" --body="$(FLYTE_CLUSTER_ENDPOINT)"
 	gh secret set FLYTE_OAUTH_CLIENT_SECRET --repo="$(GH_REPO)" --body="$(FLYTE_OAUTH_CLIENT_SECRET)"
 	gh secret set FLYTECTL_CONFIG --repo="$(GH_REPO)" --body="$(FLYTECTL_CONFIG)"
+	gh secret set CODECOV_TOKEN --repo="$(GH_REPO)" --body="$(CODECOV_TOKEN)"
 	gh secret set GCP_PROJECT_ID --repo="$(GH_REPO)" --body="$(GCP_PROJECT_ID)"
 	gh secret set GCP_STORAGE_SCOPES --repo="$(GH_REPO)" --body="$(GCP_STORAGE_SCOPES)"
 	gh secret set GCP_STORAGE_CONTAINER --repo="$(GH_REPO)" --body="$(GCP_STORAGE_CONTAINER)"
