@@ -12,7 +12,11 @@ A template for hydra-zen configuration of Flyte workflow execution.
 .
 ├── .argo
 │   └── build.yaml
+├── .devcontainer
+│   ├── devcontainer.Dockerfile
+│   └── devcontainer.json
 ├── .flyte
+│   ├── config-browser.yaml
 │   ├── config-local.yaml
 │   ├── config-template.yaml
 │   └── config.yaml
@@ -23,15 +27,26 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   │   └── tag-build-push-container
 │   ├── workflows
 │   │   ├── CI.yaml
-│   │   └── build-images.yaml
-│   └── .gitkeep
+│   │   ├── build-images.yaml
+│   │   └── labeler.yml
+│   ├── .gitkeep
+│   ├── codecov.yml
+│   ├── labels.yml
+│   └── renovate.json
 ├── .vscode
+│   ├── extensions.json
 │   ├── launch.json
+│   ├── settings.json
 │   └── tasks.json
 ├── containers
 │   ├── Dockerfile
 │   ├── gpu.Dockerfile
 │   └── pkg.Dockerfile
+├── environments
+│   └── conda
+│       ├── conda-linux-64.lock.yml
+│       ├── conda-lock.yml
+│       └── virtual-packages.yml
 ├── src
 │   ├── flytezen
 │   │   ├── cli
@@ -53,7 +68,6 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   ├── __init__.py
 │   ├── conftest.py
 │   └── test_cli.py
-├── .coverage
 ├── .dockerignore
 ├── .env
 ├── .envrc
@@ -62,10 +76,14 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ├── LICENSE
 ├── Makefile
 ├── README.md
+├── flake.lock
+├── flake.nix
 ├── poetry.lock
-└── pyproject.toml
+├── poetry.toml
+├── pyproject.toml
+└── requirements.txt
 
-15 directories, 40 files
+18 directories, 58 files
 ```
 
 </details>
