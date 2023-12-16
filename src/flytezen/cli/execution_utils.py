@@ -4,8 +4,8 @@ import logging
 import os
 import pkgutil
 import queue
+import re
 import secrets
-import subprocess
 import sys
 import threading
 import time
@@ -14,6 +14,7 @@ from datetime import timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Tuple, Union
 
+import plumbum
 from dataclasses_json import dataclass_json
 from flytekit import WorkflowExecutionPhase
 from flytekit.core.base_task import PythonTask
@@ -175,38 +176,79 @@ def git_info_to_workflow_version(
     logger: logging.Logger,
 ) -> Tuple[str, str, str]:
     """
-    Retrieves git information for workflow versioning.
+    Retrieves git information for workflow versioning using plumbum.
+
+    This function extracts repository name, current branch name, and short SHA.
+    It handles the case where the Git repository is in a detached HEAD state,
+    common in CI environments like GitHub Actions for pull requests.
+
+    Args:
+        logger (logging.Logger): Logger object for logging messages.
+
+    Returns:
+        Tuple[str, str, str]: A tuple containing the repository name,
+                               branch name, and short SHA commit.
+
+    Raises:
+        ValueError: If unable to extract source commit SHA from commit message.
+        ProcessExecutionError: If a git command fails.
+
+    Example:
+        >>> import logging
+        >>> logger = logging.getLogger()
+        >>> # Assuming this test is run in a Git repository
+        >>> repo_name, branch, short_sha = git_info_to_workflow_version(logger)
+        >>> print(isinstance(repo_name, str), isinstance(branch, str), isinstance(short_sha, str))
+        True True True
     """
     try:
-        git_branch = (
-            subprocess.check_output(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"]
-            )
-            .strip()
-            .decode()
-        )
-        git_short_sha = (
-            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-            .strip()
-            .decode()
-        )
-        remote_url = (
-            subprocess.check_output(
-                ["git", "config", "--get", "remote.origin.url"]
-            )
-            .strip()
-            .decode()
-        )
+        git = plumbum.local["git"]
+        git_branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
+
+        if git_branch.lower() == "head":
+            git("fetch", "origin", "+refs/heads/*:refs/remotes/origin/*")
+
+            commit_message = git("log", "-1", "--pretty=%B")
+            match = re.search(r"Merge ([0-9a-f]{40}) into", commit_message)
+            if match:
+                source_commit_sha = match.group(1)
+
+                git_branch_list = (
+                    git("branch", "-r", "--contains", source_commit_sha)
+                    .strip()
+                    .split("\n")
+                )
+                git_branch = (
+                    next(
+                        (
+                            branch
+                            for branch in git_branch_list
+                            if "HEAD" not in branch
+                        ),
+                        "",
+                    )
+                    .replace("origin/", "")
+                    .strip()
+                )
+            else:
+                git_branch_from_detached_head_failure = (
+                    "Unable to extract source commit SHA from commit message."
+                )
+                raise ValueError(git_branch_from_detached_head_failure)
+
+        git_short_sha = git("rev-parse", "--short", "HEAD").strip()
+        remote_url = git("config", "--get", "remote.origin.url").strip()
         repo_name = remote_url.split("/")[-1].rstrip(".git")
+
         for string in [repo_name, git_branch, git_short_sha]:
             if any(char.isupper() for char in string):
                 logger.warning(
-                    f"String '{string}' contains capitalized characters.\n"
-                    "Converting to lowercase."
+                    f"String '{string}' contains capitalized characters. Converting to lowercase."
                 )
 
         return repo_name.lower(), git_branch.lower(), git_short_sha.lower()
-    except subprocess.CalledProcessError as e:
+
+    except plumbum.commands.processes.ProcessExecutionError as e:
         logger.error(f"Error obtaining git information: {e}")
         raise
 
