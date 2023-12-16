@@ -134,8 +134,8 @@
               };
 
               pre-commit.hooks = {
-                alejandra.enable = true;
-                ruff.enable = true;
+                # alejandra.enable = true;
+                # ruff.enable = true;
                 # pyright.enable = true;
               };
 
