@@ -113,19 +113,28 @@
           extras = [];
         };
 
-        flytezenEditablePackage = pkgs.poetry2nix.mkPoetryEditablePackage {
+        poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
           projectDir = ./.;
+          overrides = poetry2nixOverrides;
           python = pkgs.python310;
-          editablePackageSources = {
-            flytezen = ./src;
-          };
+          # leave blank to allow for separation of editable package source
+          # from dependencies in devcontainer build
+          editablePackageSources = {};
+          extraPackages = ps: with pkgs; [python310Packages.pip];
+          preferWheels = false;
+          groups = [
+            "test"
+          ];
+          checkGroups = ["test"];
+          extras = [];
         };
 
         sysPackages = with pkgs; [
           fakeNss
+          bashInteractive
           coreutils
           nix
-          bashInteractive
+          direnv
         ];
 
         devPackages = with pkgs; [
@@ -143,6 +152,16 @@
           yq-go
           zsh
         ];
+
+        pythonPackages = [
+          poetryEnv
+        ];
+
+        customZshrc = pkgs.writeText ".zshrc" ''
+          eval "$$(direnv hook zsh)"
+          eval "$$(starship init zsh)"
+          eval "$$(atuin init zsh)"
+        '';
       in {
         formatter = pkgs.alejandra;
 
@@ -163,32 +182,35 @@
             # tag = "latest";
             initializeNixDatabase = true;
             copyToRoot = [
-              pkgs.dockerTools.fakeNss
+              # pkgs.dockerTools.fakeNss
+              pkgs.fakeNss
               (pkgs.buildEnv {
                 name = "root";
                 paths = sysPackages;
                 pathsToLink = "/bin";
               })
+              customZshrc
             ];
-            maxLayers = 123;
-            # layers = let
-            #   layerDefs = [
-            #     {
-            #       deps = with pkgs; [fakeNss coreutils nix bashInteractive];
-            #     }
-            #     {
-            #       deps = devPackages;
-            #     }
-            #     {
-            #       deps = with pkgs; [poetryEnvWithSource];
-            #     }
-            #   ];
-            # in
-            #   foldImageLayers layerDefs;
+            # This can be used instead of the manual layers below
+            # maxLayers = 123;
+            layers = let
+              layerDefs = [
+                {
+                  deps = sysPackages;
+                }
+                {
+                  deps = devPackages;
+                }
+                {
+                  deps = pythonPackages;
+                }
+              ];
+            in
+              foldImageLayers layerDefs;
             config = {
               Env = [
                 (let
-                  path = with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ [poetryEnvWithSource]);
+                  path = with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages);
                 in "PATH=${path}")
                 "NIX_PAGER=cat"
                 "USER=root"
@@ -200,7 +222,7 @@
               Cmd = [
                 "${pkgs.bashInteractive}/bin/bash"
                 "-c"
-                "${pkgs.zsh}/bin/zsh"
+                "source ${customZshrc} && exec ${pkgs.zsh}/bin/zsh"
               ];
             };
           };
