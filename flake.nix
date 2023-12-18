@@ -97,7 +97,7 @@
             }
         );
 
-        poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
+        poetryEnvWithSource = pkgs.poetry2nix.mkPoetryEnv {
           projectDir = ./.;
           overrides = poetry2nixOverrides;
           python = pkgs.python310;
@@ -111,6 +111,30 @@
           ];
           checkGroups = ["test"];
           extras = [];
+        };
+
+        poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
+          projectDir = ./.;
+          overrides = poetry2nixOverrides;
+          python = pkgs.python310;
+          # leave blank to allow for separation of editable package source
+          # from dependencies in devcontainer build
+          editablePackageSources = {};
+          extraPackages = ps: with pkgs; [python310Packages.pip];
+          preferWheels = false;
+          groups = [
+            "test"
+          ];
+          checkGroups = ["test"];
+          extras = [];
+        };
+
+        flytezenEditablePackage = pkgs.poetry2nix.mkPoetryEditablePackage {
+          projectDir = ./.;
+          python = pkgs.python310;
+          editablePackageSources = {
+            flytezen = ./src;
+          };
         };
 
         devPackages = with pkgs; [
@@ -144,11 +168,21 @@
         packages = {
           devcontainer = nix2container.buildImage {
             name = "flytezendev";
-            # tag = "latest"; # generally prefer default image output hash
+            # prefer default image output hash to manual tag
+            # tag = "latest";
+            initializeNixDatabase = true;
+            copyToRoot = [
+              pkgs.dockerTools.fakeNss
+              (pkgs.buildEnv {
+                name = "root";
+                paths = with pkgs; [coreutils nix bashInteractive];
+                pathsToLink = "/bin";
+              })
+            ];
             layers = let
               layerDefs = [
                 {
-                  deps = with pkgs; [coreutils bashInteractive];
+                  deps = with pkgs; [fakeNss coreutils nix bashInteractive];
                 }
                 {
                   deps = devPackages;
@@ -156,14 +190,28 @@
                 {
                   deps = with pkgs; [poetryEnv];
                 }
+                {
+                  deps = with pkgs; [flytezenEditablePackage];
+                }
               ];
             in
               foldImageLayers layerDefs;
             config = {
               Env = [
                 (let
-                  path = with pkgs; lib.makeBinPath ([poetryEnv coreutils bashInteractive] ++ devPackages);
+                  path = with pkgs; lib.makeBinPath ([coreutils nix bashInteractive poetryEnv flytezenEditablePackage] ++ devPackages);
                 in "PATH=${path}")
+                "NIX_PAGER=cat"
+                "USER=root"
+                "HOME=/"
+              ];
+              # Use default empty Entrypoint to completely defer to Cmd for flexible override
+              Entrypoint = [];
+              # but provide default Cmd to start zsh
+              Cmd = [
+                "${pkgs.bashInteractive}/bin/bash"
+                "-c"
+                "${pkgs.zsh}/bin/zsh"
               ];
             };
           };
