@@ -148,7 +148,7 @@
             layers = let
               layerDefs = [
                 {
-                  deps = with pkgs; [bashInteractive];
+                  deps = with pkgs; [coreutils bashInteractive];
                 }
                 {
                   deps = devPackages;
@@ -162,7 +162,7 @@
             config = {
               Env = [
                 (let
-                  path = with pkgs; lib.makeBinPath [bashInteractive zsh];
+                  path = with pkgs; lib.makeBinPath ([poetryEnv coreutils bashInteractive] ++ devPackages);
                 in "PATH=${path}")
               ];
             };
