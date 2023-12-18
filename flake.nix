@@ -160,7 +160,9 @@
             name = "flytezen";
             buildInputs = with pkgs;
               [
-                poetryEnv
+                poetryEnvWithSource
+                # poetryEnv
+                # flytezenEditablePackage
               ]
               ++ devPackages;
           };
@@ -188,11 +190,14 @@
                   deps = devPackages;
                 }
                 {
-                  deps = with pkgs; [poetryEnv];
+                  deps = with pkgs; [poetryEnvWithSource];
                 }
-                {
-                  deps = with pkgs; [flytezenEditablePackage];
-                }
+                # {
+                #   deps = with pkgs; [poetryEnv];
+                # }
+                # {
+                #   deps = with pkgs; [flytezenEditablePackage];
+                # }
               ];
             in
               foldImageLayers layerDefs;
