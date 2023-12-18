@@ -18,6 +18,7 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
+    nixpod-home.url = github:cameronraysmith/nixpod-home/pin-nixpkgs-2311;
   };
 
   nixConfig = {
@@ -43,6 +44,8 @@
           overlays = [inputs.poetry2nix.overlays.default];
         };
         inherit (inputs.nix2container.packages.${system}) nix2container;
+        nixpod-home=inputs.nixpod-home.packages.${system};
+        # inherit (inputs.nixpod-home.apps.${system}.default) nixpod-home-activate;
 
         # million thanks to @kolloch for the foldImageLayers function!
         # https://blog.eigenvalue.net/2023-nix2container-everything-once/
@@ -216,6 +219,7 @@
                 pathsToLink = "/bin";
               })
               rcRoot
+              nixpod-home.default
             ];
             # This can be used instead of the manual layers below
             # maxLayers = 123;
@@ -249,7 +253,7 @@
               Cmd = [
                 "${pkgs.bashInteractive}/bin/bash"
                 "-c"
-                "${pkgs.zsh}/bin/zsh"
+                "${nixpod-home.activate-home}/bin/activate-home && exec ${pkgs.zsh}bin/zsh"
               ];
             };
           };
