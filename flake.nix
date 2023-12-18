@@ -137,7 +137,6 @@
             buildInputs = with pkgs;
               [
                 poetryEnv
-                poetry
               ]
               ++ devPackages;
           };
