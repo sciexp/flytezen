@@ -42,6 +42,22 @@
           inherit system;
           overlays = [inputs.poetry2nix.overlays.default];
         };
+        inherit (inputs.nix2container.packages.${system}) nix2container;
+
+        # million thanks to @kolloch for the foldImageLayers function!
+        # https://blog.eigenvalue.net/2023-nix2container-everything-once/
+        foldImageLayers = let
+          mergeToLayer = priorLayers: component:
+            assert builtins.isList priorLayers;
+            assert builtins.isAttrs component; let
+              layer = nix2container.buildLayer (component
+                // {
+                  layers = priorLayers;
+                });
+            in
+              priorLayers ++ [layer];
+        in
+          layers: pkgs.lib.foldl mergeToLayer [] layers;
 
         pyPkgsBuildRequirements = {
           cloudpickle = ["flit-core"];
@@ -95,30 +111,61 @@
           extras = [];
           overrides = poetry2nixOverrides;
         };
+
+        devPackages = with pkgs; [
+          poetry
+          atuin
+          bat
+          gh
+          git
+          gnumake
+          lazygit
+          poethepoet
+          ripgrep
+          starship
+          tree
+          yq-go
+          zsh
+        ];
       in {
         formatter = pkgs.alejandra;
 
         devShells = {
           default = pkgs.mkShell {
             name = "flytezen";
-            buildInputs = with pkgs; [
-              poetryEnv
-              # python310Packages.poetry-core
-              poetry
-
-              atuin
-              bat
-              gh
-              git
-              gnumake
-              lazygit
-              poethepoet
-              ripgrep
-              starship
-              tree
-              yq-go
-              zsh
-            ];
+            buildInputs = with pkgs;
+              [
+                poetryEnv
+                poetry
+              ]
+              ++ devPackages;
+          };
+        };
+        packages = {
+          devcontainer = nix2container.buildImage {
+            name = "flytezendev";
+            # tag = "latest"; # generally prefer default image output hash
+            layers = let
+              layerDefs = [
+                {
+                  deps = with pkgs; [bashInteractive];
+                }
+                {
+                  deps = devPackages;
+                }
+                {
+                  deps = with pkgs; [poetryEnv];
+                }
+              ];
+            in
+              foldImageLayers layerDefs;
+            config = {
+              Env = [
+                (let
+                  path = with pkgs; lib.makeBinPath [bashInteractive zsh];
+                in "PATH=${path}")
+              ];
+            };
           };
         };
       };
