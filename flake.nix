@@ -113,22 +113,6 @@
           extras = [];
         };
 
-        poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
-          projectDir = ./.;
-          overrides = poetry2nixOverrides;
-          python = pkgs.python310;
-          # leave blank to allow for separation of editable package source
-          # from dependencies in devcontainer build
-          editablePackageSources = {};
-          extraPackages = ps: with pkgs; [python310Packages.pip];
-          preferWheels = false;
-          groups = [
-            "test"
-          ];
-          checkGroups = ["test"];
-          extras = [];
-        };
-
         flytezenEditablePackage = pkgs.poetry2nix.mkPoetryEditablePackage {
           projectDir = ./.;
           python = pkgs.python310;
@@ -136,6 +120,13 @@
             flytezen = ./src;
           };
         };
+
+        sysPackages = with pkgs; [
+          fakeNss
+          coreutils
+          nix
+          bashInteractive
+        ];
 
         devPackages = with pkgs; [
           poetry
@@ -161,8 +152,6 @@
             buildInputs = with pkgs;
               [
                 poetryEnvWithSource
-                # poetryEnv
-                # flytezenEditablePackage
               ]
               ++ devPackages;
           };
@@ -177,34 +166,29 @@
               pkgs.dockerTools.fakeNss
               (pkgs.buildEnv {
                 name = "root";
-                paths = with pkgs; [coreutils nix bashInteractive];
+                paths = sysPackages;
                 pathsToLink = "/bin";
               })
             ];
-            layers = let
-              layerDefs = [
-                {
-                  deps = with pkgs; [fakeNss coreutils nix bashInteractive];
-                }
-                {
-                  deps = devPackages;
-                }
-                {
-                  deps = with pkgs; [poetryEnvWithSource];
-                }
-                # {
-                #   deps = with pkgs; [poetryEnv];
-                # }
-                # {
-                #   deps = with pkgs; [flytezenEditablePackage];
-                # }
-              ];
-            in
-              foldImageLayers layerDefs;
+            maxLayers = 123;
+            # layers = let
+            #   layerDefs = [
+            #     {
+            #       deps = with pkgs; [fakeNss coreutils nix bashInteractive];
+            #     }
+            #     {
+            #       deps = devPackages;
+            #     }
+            #     {
+            #       deps = with pkgs; [poetryEnvWithSource];
+            #     }
+            #   ];
+            # in
+            #   foldImageLayers layerDefs;
             config = {
               Env = [
                 (let
-                  path = with pkgs; lib.makeBinPath ([coreutils nix bashInteractive poetryEnv flytezenEditablePackage] ++ devPackages);
+                  path = with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ [poetryEnvWithSource]);
                 in "PATH=${path}")
                 "NIX_PAGER=cat"
                 "USER=root"
