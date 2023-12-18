@@ -20,5 +20,7 @@
     "**/.pytest_cache/**": true,
     "**/.ruff_cache/**": true,
     "**/.solid/**": true
-  }
+  },
+  "terminal.integrated.scrollback": 100000,
+  "terminal.integrated.persistentSessionScrollback": 100000
 }
