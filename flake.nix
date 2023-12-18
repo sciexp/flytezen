@@ -99,17 +99,18 @@
 
         poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
           projectDir = ./.;
+          overrides = poetry2nixOverrides;
           python = pkgs.python310;
-          preferWheels = false;
           editablePackageSources = {
             flytezen = ./src;
           };
+          extraPackages = ps: with pkgs; [python310Packages.pip];
+          preferWheels = false;
           groups = [
             "test"
           ];
           checkGroups = ["test"];
           extras = [];
-          overrides = poetry2nixOverrides;
         };
 
         devPackages = with pkgs; [
