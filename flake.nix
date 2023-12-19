@@ -159,7 +159,7 @@
           cat > $out/etc/group <<EOF
           root:x:0:root
           nobody:x:65534:
-          nixbld:x:30000:
+          nixbld:x:30000:nobody
           EOF
 
           echo "hosts: files dns" > $out/etc/nsswitch.conf
