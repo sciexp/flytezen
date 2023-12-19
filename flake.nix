@@ -134,24 +134,39 @@
           bashInteractive
           coreutils
           cacert
-          shadow
           nix
           direnv
         ];
 
-        customZshrc = pkgs.writeText "zshrc" ''
+        rcRoot = pkgs.runCommand "rcRoot" {} ''
+          mkdir -p $out/root
+
+          cat > $out/root/.zshrc <<EOF
           eval "$(direnv hook zsh)"
           eval "$(starship init zsh)"
           eval "$(atuin init zsh)"
+          EOF
         '';
 
-        setupScript = pkgs.writeScript "rcup" ''
-          mkdir -p /root
-          mkdir -p /tmp
-          groupadd -f nixbld
-          usermod -a -G nixbld root
-          ln -sf ${customZshrc} /root/.zshrc
-          zsh
+        mkRootNss = pkgs.runCommand "mkRootNss" {} ''
+          mkdir -p $out/etc
+
+          cat > $out/etc/passwd <<EOF
+          root:x:0:0:root user:/var/empty:/bin/sh
+          nobody:x:65534:65534:nobody:/var/empty:/bin/sh
+          EOF
+
+          # add root to nixbld group
+          cat > $out/etc/group <<EOF
+          root:x:0:root
+          nobody:x:65534:
+          nixbld:x:30000:root
+          EOF
+
+          echo "hosts: files dns" > $out/etc/nsswitch.conf
+
+          mkdir -p $out/tmp
+          mkdir -p $out/root
         '';
 
         devPackages = with pkgs; [
@@ -174,7 +189,6 @@
         pythonPackages = [
           poetryEnv
         ];
-
       in {
         formatter = pkgs.alejandra;
 
@@ -195,15 +209,14 @@
             # tag = "latest";
             initializeNixDatabase = true;
             copyToRoot = [
-              # pkgs.dockerTools.fakeNss
-              pkgs.fakeNss
+              # similar to pkgs.fakeNss
+              mkRootNss
               (pkgs.buildEnv {
                 name = "root";
                 paths = sysPackages;
                 pathsToLink = "/bin";
               })
-              customZshrc
-              setupScript
+              rcRoot
             ];
             # This can be used instead of the manual layers below
             # maxLayers = 123;
@@ -216,7 +229,7 @@
                   deps = devPackages;
                 }
                 {
-                  deps = pythonPackages ++ [setupScript];
+                  deps = pythonPackages;
                 }
               ];
             in
@@ -237,7 +250,7 @@
               Cmd = [
                 "${pkgs.bashInteractive}/bin/bash"
                 "-c"
-                setupScript
+                "${pkgs.zsh}/bin/zsh"
               ];
             };
           };
