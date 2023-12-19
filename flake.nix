@@ -142,9 +142,9 @@
           mkdir -p $out/root
 
           cat > $out/root/.zshrc <<EOF
-          eval "$(direnv hook zsh)"
-          eval "$(starship init zsh)"
-          eval "$(atuin init zsh)"
+          eval "\$(direnv hook zsh)"
+          eval "\$(starship init zsh)"
+          eval "\$(atuin init zsh)"
           EOF
         '';
 
