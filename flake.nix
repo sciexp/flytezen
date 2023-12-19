@@ -134,6 +134,7 @@
           bashInteractive
           coreutils
           cacert
+          shadow
           nix
           direnv
         ];
@@ -146,6 +147,9 @@
 
         setupScript = pkgs.writeScript "rcup" ''
           mkdir -p /root
+          mkdir -p /tmp
+          groupadd -f nixbld
+          usermod -a -G nixbld root
           ln -sf ${customZshrc} /root/.zshrc
           zsh
         '';
