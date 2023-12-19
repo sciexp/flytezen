@@ -356,6 +356,12 @@ cache: ## Push devshell to cachix
 	jq -r '.[].outputs | to_entries[].value' | \
 	cachix push $(CACHIX_CACHE_NAME)
 
+devcontainer: ## Build devcontainer.
+	nix run .#devcontainer.copyToDockerDaemon --accept-flake-config
+
+DEVCONTAINER_TAG ?= latest
+drundc: ## Run devcontainer. make drundc DEVCONTAINER_TAG=
+	docker run --rm -it flytezendev:$(DEVCONTAINER_TAG)
 
 #-------
 # system
