@@ -30,6 +30,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   │   ├── build-images.yaml
 │   │   └── labeler.yml
 │   ├── .gitkeep
+│   ├── CODEOWNERS
 │   ├── codecov.yml
 │   ├── labels.yml
 │   └── renovate.json
@@ -76,6 +77,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ├── LICENSE
 ├── Makefile
 ├── README.md
+├── devshell
 ├── flake.lock
 ├── flake.nix
 ├── poetry.lock
@@ -83,7 +85,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ├── pyproject.toml
 └── requirements.txt
 
-18 directories, 58 files
+18 directories, 57 files
 ```
 
 </details>
