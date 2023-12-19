@@ -133,12 +133,26 @@
           fakeNss
           bashInteractive
           coreutils
+          cacert
           nix
           direnv
         ];
 
+        customZshrc = pkgs.writeText "zshrc" ''
+          eval "$(direnv hook zsh)"
+          eval "$(starship init zsh)"
+          eval "$(atuin init zsh)"
+        '';
+
+        setupScript = pkgs.writeScript "rcup" ''
+          mkdir -p /root
+          ln -sf ${customZshrc} /root/.zshrc
+          zsh
+        '';
+
         devPackages = with pkgs; [
           poetry
+          neovim
           atuin
           bat
           gh
@@ -157,11 +171,6 @@
           poetryEnv
         ];
 
-        customZshrc = pkgs.writeText ".zshrc" ''
-          eval "$$(direnv hook zsh)"
-          eval "$$(starship init zsh)"
-          eval "$$(atuin init zsh)"
-        '';
       in {
         formatter = pkgs.alejandra;
 
@@ -190,6 +199,7 @@
                 pathsToLink = "/bin";
               })
               customZshrc
+              setupScript
             ];
             # This can be used instead of the manual layers below
             # maxLayers = 123;
@@ -202,7 +212,7 @@
                   deps = devPackages;
                 }
                 {
-                  deps = pythonPackages;
+                  deps = pythonPackages ++ [setupScript];
                 }
               ];
             in
@@ -212,9 +222,10 @@
                 (let
                   path = with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages);
                 in "PATH=${path}")
+                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
                 "NIX_PAGER=cat"
                 "USER=root"
-                "HOME=/"
+                "HOME=/root"
               ];
               # Use default empty Entrypoint to completely defer to Cmd for flexible override
               Entrypoint = [];
@@ -222,7 +233,7 @@
               Cmd = [
                 "${pkgs.bashInteractive}/bin/bash"
                 "-c"
-                "source ${customZshrc} && exec ${pkgs.zsh}/bin/zsh"
+                setupScript
               ];
             };
           };
