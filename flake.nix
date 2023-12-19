@@ -156,11 +156,10 @@
           nobody:x:65534:65534:nobody:/var/empty:/bin/sh
           EOF
 
-          # add root to nixbld group
           cat > $out/etc/group <<EOF
           root:x:0:root
           nobody:x:65534:
-          nixbld:x:30000:root
+          nixbld:x:30000:
           EOF
 
           echo "hosts: files dns" > $out/etc/nsswitch.conf
