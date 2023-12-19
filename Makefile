@@ -384,6 +384,10 @@ setup_dev: install_direnv install_nix
 	echo "trusted-users = root $$USER" | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon && \
 	cachix use devenv
 
+.PHONY: devshell
+devshell: ## Enter nix devshell. See use_flake in `direnv stdlib`.
+	./scripts/flake
+
 cdirenv: ## !!Enable direnv in zshrc.!!
 	@if ! grep -q 'direnv hook zsh' "${HOME}/.zshrc"; then \
 		printf '\n%s\n' 'eval "$$(direnv hook zsh)"' >> "${HOME}/.zshrc"; \
