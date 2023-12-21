@@ -180,12 +180,21 @@
           zsh
         ];
 
-        localPackageRepo = pkgs.runCommand "local-package-repo" {} ''
-          # This would assume the current directory has the same name as the repo
-          # repoDir=$(basename $(pwd))
-          repoDir=flytezen
+        packageGitRepo = builtins.fetchGit {
+          url = "https://github.com/sciexp/flytezen.git";
+          # the ref is not strictly required when specifying a rev
+          # but it should be included whenever possible
+          # ref = "main";
+          ref = "20-nixci";
+          # the rev can be omitted transiently in development 
+          # to track the HEAD of a ref but doing so requires 
+          # `--impure` image builds
+          rev = "fc833e1b08364b268f2a857330009b899dcbab2f";
+        };
+
+        packageGitRepoInContainer = pkgs.runCommand "copy-package-git-repo" {} ''
           mkdir -p $out/root
-          cp -r . $out/root/$repoDir
+          cp -r ${packageGitRepo} $out/root/flytezen
         '';
 
         pythonPackages = [
@@ -207,7 +216,7 @@
         packages = {
           devcontainer = nix2container.buildImage {
             name = "flytezendev";
-            # prefer default image output hash to manual tag
+            # generally prefer the default image hash to manual tagging
             # tag = "latest";
             initializeNixDatabase = true;
             copyToRoot = [
@@ -219,10 +228,11 @@
                 pathsToLink = "/bin";
               })
               rcRoot
-              localPackageRepo
+              packageGitRepoInContainer
             ];
-            # This can be used instead of the manual layers below
+            # Setting maxLayers <=127 
             # maxLayers = 123;
+            # can be used instead of the manual layer specification below
             layers = let
               layerDefs = [
                 {
