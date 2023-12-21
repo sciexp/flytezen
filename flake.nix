@@ -110,17 +110,17 @@
           extras = [];
         };
 
-        poetryEnv = pkgs.poetry2nix.mkPoetryEnv (
-          mkPoetryEnvAttrs
-        );
+        poetryEnv = pkgs.poetry2nix.mkPoetryEnv mkPoetryEnvAttrs;
 
-        mkPoetryEnvWithSource = src: pkgs.poetry2nix.mkPoetryEnv (
-          mkPoetryEnvAttrs // {
-            editablePackageSources = {
-              flytezen = src;
-            };
-          }
-        );
+        mkPoetryEnvWithSource = src:
+          pkgs.poetry2nix.mkPoetryEnv (
+            mkPoetryEnvAttrs
+            // {
+              editablePackageSources = {
+                flytezen = src;
+              };
+            }
+          );
 
         sysPackages = with pkgs; [
           fakeNss
@@ -181,21 +181,34 @@
         ];
 
         packageGitRepo = builtins.fetchGit {
+          name = "flytezen-source";
           url = "https://github.com/sciexp/flytezen.git";
           # the ref is not strictly required when specifying a rev
           # but it should be included whenever possible
           # ref = "main";
           ref = "20-nixci";
-          # the rev can be omitted transiently in development 
-          # to track the HEAD of a ref but doing so requires 
+          # the rev can be omitted transiently in development
+          # to track the HEAD of a ref but doing so requires
           # `--impure` image builds
-          rev = "fc833e1b08364b268f2a857330009b899dcbab2f";
+          rev = "1cf7089cb6e79bb240eac0ab95faad6cea866606";
         };
 
         packageGitRepoInContainer = pkgs.runCommand "copy-package-git-repo" {} ''
           mkdir -p $out/root
           cp -r ${packageGitRepo} $out/root/flytezen
         '';
+
+        # The following can be used to to place a copy of the local
+        # source in the devcontainer if it does not exist on a ref+rev.
+        # localRepoPath = ./.;
+        # packageGitLocalRepoInContainer = pkgs.runCommand "copy-package-git-local-repo" {} ''
+        #   mkdir -p $out/root
+        #   cp -r ${localRepoPath} $out/root/flytezen
+        # '';
+        #
+        # packageGitLocalRepo = builtins.fetchGit ./.;
+        # should work as an alternative to localRepoPath
+        # see https://github.com/NixOS/nix/pull/7706/files
 
         pythonPackages = [
           (mkPoetryEnvWithSource /root/flytezen/src)
@@ -228,9 +241,10 @@
                 pathsToLink = "/bin";
               })
               rcRoot
+              # packageGitLocalRepoInContainer
               packageGitRepoInContainer
             ];
-            # Setting maxLayers <=127 
+            # Setting maxLayers <=127
             # maxLayers = 123;
             # can be used instead of the manual layer specification below
             layers = let
