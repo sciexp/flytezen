@@ -357,7 +357,7 @@ cache: ## Push devshell to cachix
 	cachix push $(CACHIX_CACHE_NAME)
 
 devcontainer: ## Build devcontainer.
-	nix run .#devcontainer.copyToDockerDaemon --accept-flake-config
+	nix run .#devcontainer.copyToDockerDaemon --accept-flake-config --impure
 
 DEVCONTAINER_TAG ?= latest
 drundc: ## Run devcontainer. make drundc DEVCONTAINER_TAG=
