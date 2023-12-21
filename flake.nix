@@ -97,13 +97,10 @@
             }
         );
 
-        poetryEnvWithSource = pkgs.poetry2nix.mkPoetryEnv {
+        mkPoetryEnvAttrs = {
           projectDir = ./.;
           overrides = poetry2nixOverrides;
           python = pkgs.python310;
-          editablePackageSources = {
-            flytezen = ./src;
-          };
           extraPackages = ps: with pkgs; [python310Packages.pip];
           preferWheels = false;
           groups = [
@@ -113,21 +110,17 @@
           extras = [];
         };
 
-        poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
-          projectDir = ./.;
-          overrides = poetry2nixOverrides;
-          python = pkgs.python310;
-          # leave blank to allow for separation of editable package source
-          # from dependencies in devcontainer build
-          editablePackageSources = {};
-          extraPackages = ps: with pkgs; [python310Packages.pip];
-          preferWheels = false;
-          groups = [
-            "test"
-          ];
-          checkGroups = ["test"];
-          extras = [];
-        };
+        poetryEnv = pkgs.poetry2nix.mkPoetryEnv (
+          mkPoetryEnvAttrs
+        );
+
+        mkPoetryEnvWithSource = src: pkgs.poetry2nix.mkPoetryEnv (
+          mkPoetryEnvAttrs // {
+            editablePackageSources = {
+              flytezen = src;
+            };
+          }
+        );
 
         sysPackages = with pkgs; [
           fakeNss
@@ -137,16 +130,6 @@
           nix
           direnv
         ];
-
-        rcRoot = pkgs.runCommand "rcRoot" {} ''
-          mkdir -p $out/root
-
-          cat > $out/root/.zshrc <<EOF
-          eval "\$(direnv hook zsh)"
-          eval "\$(starship init zsh)"
-          eval "\$(atuin init zsh)"
-          EOF
-        '';
 
         mkRootNss = pkgs.runCommand "mkRootNss" {} ''
           mkdir -p $out/etc
@@ -168,6 +151,16 @@
           mkdir -p $out/root
         '';
 
+        rcRoot = pkgs.runCommand "rcRoot" {} ''
+          mkdir -p $out/root
+
+          cat > $out/root/.zshrc <<EOF
+          eval "\$(direnv hook zsh)"
+          eval "\$(starship init zsh)"
+          eval "\$(atuin init zsh)"
+          EOF
+        '';
+
         devPackages = with pkgs; [
           poetry
           neovim
@@ -185,8 +178,16 @@
           zsh
         ];
 
+        localPackageRepo = pkgs.runCommand "local-package-repo" {} ''
+          # This would assume the current directory has the same name as the repo
+          # repoDir=$(basename $(pwd))
+          repoDir=flytezen
+          mkdir -p $out/root
+          cp -r . $out/root/$repoDir
+        '';
+
         pythonPackages = [
-          poetryEnv
+          (mkPoetryEnvWithSource /root/flytezen/src)
         ];
       in {
         formatter = pkgs.alejandra;
@@ -196,7 +197,7 @@
             name = "flytezen";
             buildInputs = with pkgs;
               [
-                poetryEnvWithSource
+                (mkPoetryEnvWithSource ./src)
               ]
               ++ devPackages;
           };
@@ -216,6 +217,7 @@
                 pathsToLink = "/bin";
               })
               rcRoot
+              localPackageRepo
             ];
             # This can be used instead of the manual layers below
             # maxLayers = 123;
