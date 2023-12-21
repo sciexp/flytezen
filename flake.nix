@@ -170,6 +170,8 @@
           git
           gnumake
           lazygit
+          man-db
+          man-pages
           poethepoet
           ripgrep
           starship
