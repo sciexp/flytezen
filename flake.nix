@@ -142,7 +142,6 @@
           );
 
         sysPackages = with pkgs; [
-          fakeNss
           bashInteractive
           coreutils
           cacert
