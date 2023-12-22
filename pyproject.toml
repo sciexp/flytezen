@@ -27,6 +27,7 @@ Changelog = "https://github.com/sciexp/flytezen/releases"
 [tool.poetry.dependencies]
 python = "3.10.13"
 dataclasses-json = "0.5.9"
+dulwich = "0.21.7"
 flytekit = "1.10.2"
 fsspec = "2023.9.2"
 hydra-zen = "0.11.0"
