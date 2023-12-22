@@ -17,34 +17,34 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@v2
       - run: nix flake check
       - run: nix build .
-  release:
-    runs-on: ubuntu-latest
-    needs: check
-    # if: ${{ github.repository_owner == 'sciexp' && github.event_name == 'push' }}
-    environment:
-      name: release
-      url: https://github.com/sciexp/flytezen/releases/tag/${{ steps.semanticrelease.outputs.git-tag }}
-    permissions:
-      contents: write
-    outputs:
-      version: ${{ steps.semanticrelease.outputs.version }}
-      released: ${{ steps.semanticrelease.outputs.released }}
-      git-head: ${{ steps.semanticrelease.outputs.git-head }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v9
-      - uses: DeterminateSystems/magic-nix-cache-action@v2
-      - run: nix profile install .#releaseEnv
-      - uses: cihelper/action-semanticrelease-poetry@v1
-        id: semanticrelease
-      - uses: actions/upload-artifact@v3
-        if: ${{ steps.semanticrelease.outputs.released == 'true' }}
-        with:
-          name: poetry-build
-          path: ./dist
+  # release:
+  #   runs-on: ubuntu-latest
+  #   needs: check
+  #   # if: ${{ github.repository_owner == 'sciexp' && github.event_name == 'push' }}
+  #   environment:
+  #     name: release
+  #     url: https://github.com/sciexp/flytezen/releases/tag/${{ steps.semanticrelease.outputs.git-tag }}
+  #   permissions:
+  #     contents: write
+  #   outputs:
+  #     version: ${{ steps.semanticrelease.outputs.version }}
+  #     released: ${{ steps.semanticrelease.outputs.released }}
+  #     git-head: ${{ steps.semanticrelease.outputs.git-head }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: DeterminateSystems/nix-installer-action@v9
+  #     - uses: DeterminateSystems/magic-nix-cache-action@v2
+  #     - run: nix profile install .#releaseEnv
+  #     - uses: cihelper/action-semanticrelease-poetry@v1
+  #       id: semanticrelease
+  #     - uses: actions/upload-artifact@v3
+  #       if: ${{ steps.semanticrelease.outputs.released == 'true' }}
+  #       with:
+  #         name: poetry-build
+  #         path: ./dist
   deploy-docker:
     runs-on: ubuntu-latest
-    needs: release
+    # needs: release
     # if: ${{ needs.release.outputs.released == 'true' }}
     permissions:
       contents: read
@@ -55,7 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release.outputs.git-head }}
+          # ref: ${{ needs.release.outputs.git-head }}
+          ref: "20-nixci"
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -66,7 +67,8 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@v2
       - run: nix run .#devcontainerManifest --impure
         env:
-          VERSION: ${{ needs.release.outputs.version }}
+          # VERSION: ${{ needs.release.outputs.version }}
+          VERSION: test01
           GH_TOKEN: ${{ github.token }}
 #   deploy-pypi:
 #     runs-on: ubuntu-latest
