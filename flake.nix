@@ -248,7 +248,7 @@
         packages = {
           default = pkgs.poetry2nix.mkPoetryApplication (
             mkPoetryAttrs
-            # TODO: library depends on git binary vs dulwich
+            # TODO: library not loaded or has external dependencies (e.g. git)
             # // {
             #   checkPhase = "pytest";
             # }
