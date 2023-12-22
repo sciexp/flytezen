@@ -147,8 +147,7 @@
           cacert
           nix
           direnv
-          shadow
-        ];
+        ] ++ lib.optional (lib.elem system pkgs.shadow.meta.platforms) shadow;
 
         mkRootNss = pkgs.runCommand "mkRootNss" {} ''
           mkdir -p $out/etc
