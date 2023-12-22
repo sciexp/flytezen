@@ -148,6 +148,7 @@
           cacert
           nix
           direnv
+          shadow
         ];
 
         mkRootNss = pkgs.runCommand "mkRootNss" {} ''
@@ -193,7 +194,6 @@
           man-pages
           poethepoet
           ripgrep
-          shadow
           starship
           tree
           yq-go
