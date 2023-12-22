@@ -259,7 +259,7 @@
           };
 
           devcontainer = nix2container.buildImage {
-            name = "flytezendev";
+            name = "flytezennixdev";
             # generally prefer the default image hash to manual tagging
             # tag = "latest";
             initializeNixDatabase = true;
@@ -312,6 +312,35 @@
               ];
             };
           };
+
+          devcontainerDockerTools = pkgs.dockerTools.buildLayeredImage {
+            name = "flytezendev";
+            tag = "latest";
+            created = "now";
+
+            contents = [
+              mkRootNss
+              (pkgs.buildEnv {
+                name = "root";
+                paths = sysPackages;
+                pathsToLink = "/bin";
+              })
+              rcRoot
+              packageGitRepoInContainer
+            ];
+
+            config = {
+              Entrypoint = [];
+              Cmd = [ "${pkgs.bashInteractive}/bin/bash" "-c" "${pkgs.zsh}/bin/zsh" ];
+              Env = [
+                "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
+                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                "NIX_PAGER=cat"
+                "USER=root"
+                "HOME=/root"
+              ];
+            };
+          };
         };
 
         legacyPackages.devcontainerManifest = inputs.flocken.legacyPackages.${system}.mkDockerManifest {
@@ -320,8 +349,8 @@
             token = builtins.getEnv "GH_TOKEN";
           };
           version = builtins.getEnv "VERSION";
-          # images = with self.packages; [x86_64-linux.devcontainer aarch64-linux.devcontainer];
-          images = with self.packages; [x86_64-linux.devcontainer];
+          # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
+          images = with self.packages; [x86_64-linux.devcontainerDockerTools];
         };
       };
     };
