@@ -347,7 +347,7 @@
           github = {
             enable = true;
             enableRegistry = false;
-            # token = builtins.getEnv "GH_TOKEN";
+            token = builtins.getEnv "GH_TOKEN";
           };
           registries = {
             "ghcr.io" = {
