@@ -68,7 +68,7 @@ jobs:
       - run: nix run .#devcontainerManifest --impure --accept-flake-config
         env:
           # VERSION: ${{ needs.release.outputs.version }}
-          VERSION: test01
+          VERSION: 0.1.2
           GH_TOKEN: ${{ github.token }}
 #   deploy-pypi:
 #     runs-on: ubuntu-latest
