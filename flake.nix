@@ -109,7 +109,7 @@
           projectDir = ./.;
           overrides = poetry2nixOverrides;
           python = pkgs.python310;
-          preferWheels = false;
+          preferWheels = true;
           groups = [
             "test"
           ];
@@ -358,8 +358,8 @@
             };
           };
           version = builtins.getEnv "VERSION";
-          # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
-          images = with self.packages; [x86_64-linux.devcontainerDockerTools];
+          images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
+          # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
         };
       };
     };
