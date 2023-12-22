@@ -358,8 +358,8 @@
             };
           };
           version = builtins.getEnv "VERSION";
-          images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
-          # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
+          # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
+          images = with self.packages; [x86_64-linux.devcontainerDockerTools];
         };
       };
     };
