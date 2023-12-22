@@ -15,6 +15,7 @@ from textwrap import dedent
 from typing import Any, Dict, List, Tuple, Union
 
 import plumbum
+from dulwich.repo import Repo
 from dataclasses_json import dataclass_json
 from flytekit import WorkflowExecutionPhase
 from flytekit.core.base_task import PythonTask
@@ -171,12 +172,11 @@ def check_required_env_vars(
         return False
     return True
 
-
-def git_info_to_workflow_version(
+def git_info_to_workflow_version_dulwich(
     logger: logging.Logger,
 ) -> Tuple[str, str, str]:
     """
-    Retrieves git information for workflow versioning using plumbum.
+    Retrieves git information for workflow versioning using Dulwich.
 
     This function extracts repository name, current branch name, and short SHA.
     It handles the case where the Git repository is in a detached HEAD state,
@@ -191,66 +191,146 @@ def git_info_to_workflow_version(
 
     Raises:
         ValueError: If unable to extract source commit SHA from commit message.
-        ProcessExecutionError: If a git command fails.
 
     Example:
         >>> import logging
         >>> logger = logging.getLogger()
-        >>> # Assuming this test is run in a Git repository
-        >>> repo_name, branch, short_sha = git_info_to_workflow_version(logger)
+        >>> # assuming this test is run in a git repository
+        >>> repo_name, branch, short_sha = git_info_to_workflow_version_dulwich(logger)
         >>> print(isinstance(repo_name, str), isinstance(branch, str), isinstance(short_sha, str))
         True True True
+        >>> print(repo_name, branch, short_sha)
     """
     try:
-        git = plumbum.local["git"]
-        git_branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
+        repo = Repo('.')
+        head_commit = repo.head().decode()
 
-        if git_branch.lower() == "head":
-            git("fetch", "origin", "+refs/heads/*:refs/remotes/origin/*")
+        config_stack = repo.get_config_stack()
+        try:
+            remote_url = config_stack.get((b'remote', b'origin'), b'url').decode()
+            repo_name = os.path.basename(remote_url.rstrip('/'))
+            if repo_name.endswith('.git'):
+                repo_name = repo_name[:-4]
+        except KeyError:
+            logger.warning("Remote origin URL not found. Using directory name as repository name.")
+            repo_name = os.path.basename(repo.path.rstrip('/'))
 
-            commit_message = git("log", "-1", "--pretty=%B")
+        branches = {name.decode(): sha for name, sha in repo.refs.as_dict(b'refs/heads').items()}
+        branch_name = None
+        for name, sha in branches.items():
+            if sha == repo.head():
+                branch_name = name
+                break
+
+        if branch_name is None:
+            logger.warning("Repository is in detached HEAD state. Attempting to find source branch.")
+            commit_message = repo[repo.head()].message.decode()
             match = re.search(r"Merge ([0-9a-f]{40}) into", commit_message)
             if match:
                 source_commit_sha = match.group(1)
 
-                git_branch_list = (
-                    git("branch", "-r", "--contains", source_commit_sha)
-                    .strip()
-                    .split("\n")
-                )
-                git_branch = (
-                    next(
-                        (
-                            branch
-                            for branch in git_branch_list
-                            if "HEAD" not in branch
-                        ),
-                        "",
-                    )
-                    .replace("origin/", "")
-                    .strip()
-                )
+                for branch, sha in branches.items():
+                    if sha.decode() == source_commit_sha:
+                        branch_name = branch
+                        break
+                else:
+                    raise ValueError("Unable to extract source commit SHA from commit message.")
             else:
-                git_branch_from_detached_head_failure = (
-                    "Unable to extract source commit SHA from commit message."
-                )
-                raise ValueError(git_branch_from_detached_head_failure)
+                branch_name = 'detached'
 
-        git_short_sha = git("rev-parse", "--short", "HEAD").strip()
-        remote_url = git("config", "--get", "remote.origin.url").strip()
-        repo_name = remote_url.split("/")[-1].rstrip(".git")
+        short_sha = head_commit[:7]
 
-        for string in [repo_name, git_branch, git_short_sha]:
+        for string in [repo_name, branch_name, short_sha]:
             if any(char.isupper() for char in string):
                 logger.warning(
                     f"String '{string}' contains capitalized characters. Converting to lowercase."
                 )
 
-        return repo_name.lower(), git_branch.lower(), git_short_sha.lower()
+        return repo_name.lower(), branch_name.lower(), short_sha.lower()
 
-    except plumbum.commands.processes.ProcessExecutionError as e:
+    except Exception as e:
         logger.error(f"Error obtaining git information: {e}")
         raise
+
+# def git_info_to_workflow_version(
+#     logger: logging.Logger,
+# ) -> Tuple[str, str, str]:
+#     """
+#     Retrieves git information for workflow versioning using plumbum.
+
+#     This function extracts repository name, current branch name, and short SHA.
+#     It handles the case where the Git repository is in a detached HEAD state,
+#     common in CI environments like GitHub Actions for pull requests.
+
+#     Args:
+#         logger (logging.Logger): Logger object for logging messages.
+
+#     Returns:
+#         Tuple[str, str, str]: A tuple containing the repository name,
+#                                branch name, and short SHA commit.
+
+#     Raises:
+#         ValueError: If unable to extract source commit SHA from commit message.
+#         ProcessExecutionError: If a git command fails.
+
+#     Example:
+#         >>> import logging
+#         >>> logger = logging.getLogger()
+#         >>> # Assuming this test is run in a Git repository
+#         >>> repo_name, branch, short_sha = git_info_to_workflow_version(logger)
+#         >>> print(isinstance(repo_name, str), isinstance(branch, str), isinstance(short_sha, str))
+#         True True True
+#     """
+#     try:
+#         git = plumbum.local["git"]
+#         git_branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
+
+#         if git_branch.lower() == "head":
+#             git("fetch", "origin", "+refs/heads/*:refs/remotes/origin/*")
+
+#             commit_message = git("log", "-1", "--pretty=%B")
+#             match = re.search(r"Merge ([0-9a-f]{40}) into", commit_message)
+#             if match:
+#                 source_commit_sha = match.group(1)
+
+#                 git_branch_list = (
+#                     git("branch", "-r", "--contains", source_commit_sha)
+#                     .strip()
+#                     .split("\n")
+#                 )
+#                 git_branch = (
+#                     next(
+#                         (
+#                             branch
+#                             for branch in git_branch_list
+#                             if "HEAD" not in branch
+#                         ),
+#                         "",
+#                     )
+#                     .replace("origin/", "")
+#                     .strip()
+#                 )
+#             else:
+#                 git_branch_from_detached_head_failure = (
+#                     "Unable to extract source commit SHA from commit message."
+#                 )
+#                 raise ValueError(git_branch_from_detached_head_failure)
+
+#         git_short_sha = git("rev-parse", "--short", "HEAD").strip()
+#         remote_url = git("config", "--get", "remote.origin.url").strip()
+#         repo_name = remote_url.split("/")[-1].rstrip(".git")
+
+#         for string in [repo_name, git_branch, git_short_sha]:
+#             if any(char.isupper() for char in string):
+#                 logger.warning(
+#                     f"String '{string}' contains capitalized characters. Converting to lowercase."
+#                 )
+
+#         return repo_name.lower(), git_branch.lower(), git_short_sha.lower()
+
+#     except plumbum.commands.processes.ProcessExecutionError as e:
+#         logger.error(f"Error obtaining git information: {e}")
+#         raise
 
 
 def generate_hydra_config() -> HydraConf:
