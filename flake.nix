@@ -344,10 +344,11 @@
         };
 
         legacyPackages.devcontainerManifest = inputs.flocken.legacyPackages.${system}.mkDockerManifest {
-          # github = {
-          #   enable = true;
-          #   token = builtins.getEnv "GH_TOKEN";
-          # };
+          github = {
+            enable = true;
+            enableRegistry = false;
+            # token = builtins.getEnv "GH_TOKEN";
+          };
           registries = {
             ghcr.io = {
               enable = true;
