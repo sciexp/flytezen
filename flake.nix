@@ -350,8 +350,7 @@
             # token = builtins.getEnv "GH_TOKEN";
           };
           registries = {
-            enable = true;
-            ghcr.io = {
+            "ghcr.io" = {
               enable = true;
               repo = "sciexp/flytezendev";
               username = builtins.getEnv "GITHUB_ACTOR";
