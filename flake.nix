@@ -350,6 +350,7 @@
             # token = builtins.getEnv "GH_TOKEN";
           };
           registries = {
+            enable = true;
             ghcr.io = {
               enable = true;
               repo = "sciexp/flytezendev";
