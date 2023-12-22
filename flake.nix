@@ -347,6 +347,7 @@
           github = {
             enable = true;
             token = builtins.getEnv "GH_TOKEN";
+            repo = "sciexp/flytezendev";
           };
           version = builtins.getEnv "VERSION";
           # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
