@@ -321,7 +321,8 @@
             token = builtins.getEnv "GH_TOKEN";
           };
           version = builtins.getEnv "VERSION";
-          images = with self.packages; [x86_64-linux.devcontainer aarch64-linux.devcontainer];
+          # images = with self.packages; [x86_64-linux.devcontainer aarch64-linux.devcontainer];
+          images = with self.packages; [x86_64-linux.devcontainer];
         };
       };
     };
