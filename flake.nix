@@ -318,27 +318,27 @@
             tag = "latest";
             created = "now";
 
-            contents = [
-              mkRootNss
-              (pkgs.buildEnv {
-                name = "root";
-                paths = sysPackages;
-                pathsToLink = "/bin";
-              })
-              rcRoot
-              packageGitRepoInContainer
-            ];
+            # copyToRoot = [
+            #   mkRootNss
+            #   (pkgs.buildEnv {
+            #     name = "root";
+            #     paths = sysPackages;
+            #     pathsToLink = "/bin";
+            #   })
+            #   rcRoot
+            #   packageGitRepoInContainer
+            # ];
 
             config = {
               Entrypoint = [];
               Cmd = [ "${pkgs.bashInteractive}/bin/bash" "-c" "${pkgs.zsh}/bin/zsh" ];
-              Env = [
-                "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
-                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                "NIX_PAGER=cat"
-                "USER=root"
-                "HOME=/root"
-              ];
+              # Env = [
+              #   "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
+              #   "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+              #   "NIX_PAGER=cat"
+              #   "USER=root"
+              #   "HOME=/root"
+              # ];
             };
           };
         };
