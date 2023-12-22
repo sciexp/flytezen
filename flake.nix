@@ -18,6 +18,10 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
+    flocken = {
+      url = "github:mirkolenz/flocken/v2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   nixConfig = {
@@ -29,7 +33,11 @@
     ];
   };
 
-  outputs = inputs @ {flake-parts, ...}:
+  outputs = inputs @ {
+    self,
+    flake-parts,
+    ...
+  }:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = import inputs.systems;
 
@@ -97,11 +105,10 @@
             }
         );
 
-        mkPoetryEnvAttrs = {
+        mkPoetryAttrs = {
           projectDir = ./.;
           overrides = poetry2nixOverrides;
           python = pkgs.python310;
-          extraPackages = ps: with pkgs; [python310Packages.pip];
           preferWheels = false;
           groups = [
             "test"
@@ -110,12 +117,24 @@
           extras = [];
         };
 
-        poetryEnv = pkgs.poetry2nix.mkPoetryEnv mkPoetryEnvAttrs;
+        poetryEnv = pkgs.poetry2nix.mkPoetryEnv (
+          mkPoetryAttrs
+          // {
+            extraPackages = ps:
+              with pkgs; [
+                python310Packages.pip
+              ];
+          }
+        );
 
         mkPoetryEnvWithSource = src:
           pkgs.poetry2nix.mkPoetryEnv (
-            mkPoetryEnvAttrs
+            mkPoetryAttrs
             // {
+              extraPackages = ps:
+                with pkgs; [
+                  python310Packages.pip
+                ];
               editablePackageSources = {
                 flytezen = src;
               };
@@ -227,6 +246,19 @@
           };
         };
         packages = {
+          default = pkgs.poetry2nix.mkPoetryApplication (
+            mkPoetryAttrs
+            # TODO: library depends on git binary vs dulwich
+            # // {
+            #   checkPhase = "pytest";
+            # }
+          );
+
+          releaseEnv = pkgs.buildEnv {
+            name = "release-env";
+            paths = with pkgs; [poetry python310];
+          };
+
           devcontainer = nix2container.buildImage {
             name = "flytezendev";
             # generally prefer the default image hash to manual tagging
@@ -281,6 +313,15 @@
               ];
             };
           };
+        };
+
+        legacyPackages.devcontainerManifest = inputs.flocken.legacyPackages.${system}.mkDockerManifest {
+          github = {
+            enable = true;
+            token = builtins.getEnv "GH_TOKEN";
+          };
+          version = builtins.getEnv "VERSION";
+          images = with self.packages; [x86_64-linux.devcontainer aarch64-linux.devcontainer];
         };
       };
     };
