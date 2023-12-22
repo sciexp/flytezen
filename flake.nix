@@ -318,7 +318,7 @@
             tag = "latest";
             created = "now";
 
-            copyToRoot = [
+            contents = [
               mkRootNss
               (pkgs.buildEnv {
                 name = "root";
