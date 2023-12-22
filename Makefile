@@ -390,6 +390,9 @@ setup_dev: install_direnv install_nix
 	echo "trusted-users = root $$USER" | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon && \
 	cachix use devenv
 
+qemu: ## Install qemu with arm64 support.
+	docker run --privileged --rm tonistiigi/binfmt --install arm64
+
 .PHONY: devshell
 devshell: ## Enter nix devshell. See use_flake in `direnv stdlib`.
 	./scripts/flake
