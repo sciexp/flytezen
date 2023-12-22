@@ -344,10 +344,17 @@
         };
 
         legacyPackages.devcontainerManifest = inputs.flocken.legacyPackages.${system}.mkDockerManifest {
-          github = {
-            enable = true;
-            token = builtins.getEnv "GH_TOKEN";
-            repo = "sciexp/flytezendev";
+          # github = {
+          #   enable = true;
+          #   token = builtins.getEnv "GH_TOKEN";
+          # };
+          registries = {
+            ghcr.io = {
+              enable = true;
+              repo = "sciexp/flytezendev";
+              username = builtins.getEnv "GITHUB_ACTOR";
+              password = builtins.getEnv "GH_TOKEN";
+            };
           };
           version = builtins.getEnv "VERSION";
           # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
