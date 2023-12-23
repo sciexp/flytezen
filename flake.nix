@@ -258,7 +258,9 @@
             paths = with pkgs; [poetry python310];
           };
 
-          devcontainer = nix2container.buildImage {
+          # Very similar devcontainer images can be constructed with either
+          # nix2container or dockerTools
+          devcontainerNix2Container = nix2container.buildImage {
             name = "flytezennixdev";
             # generally prefer the default image hash to manual tagging
             # tag = "latest";
