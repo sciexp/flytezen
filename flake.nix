@@ -236,6 +236,51 @@
         pythonPackages = [
           (mkPoetryEnvWithSource /root/flytezen/src)
         ];
+
+        devcontainerLayers = let
+              layerDefs = [
+                {
+                  deps = sysPackages;
+                }
+                {
+                  deps = devPackages;
+                }
+                {
+                  deps = pythonPackages;
+                }
+              ];
+            in
+              foldImageLayers layerDefs;
+
+        devcontainerContents = [
+              # similar to pkgs.fakeNss
+              mkRootNss
+              (pkgs.buildEnv {
+                name = "root";
+                paths = sysPackages;
+                pathsToLink = "/bin";
+              })
+              rcRoot
+              packageGitRepoInContainer
+            ];
+
+        devcontainerConfig = {
+              # Use default empty Entrypoint to completely defer to Cmd for flexible override
+              Entrypoint = [];
+              # but provide default Cmd to start zsh
+              Cmd = [
+                "${pkgs.bashInteractive}/bin/bash"
+                "-c"
+                "${pkgs.zsh}/bin/zsh"
+              ];
+              Env = [
+                "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
+                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                "NIX_PAGER=cat"
+                "USER=root"
+                "HOME=/root"
+              ];
+            };
       in {
         formatter = pkgs.alejandra;
 
@@ -249,6 +294,7 @@
               ++ devPackages;
           };
         };
+
         packages = {
           default = pkgs.poetry2nix.mkPoetryApplication (
             mkPoetryAttrs
@@ -271,88 +317,30 @@
             # generally prefer the default image hash to manual tagging
             # tag = "latest";
             initializeNixDatabase = true;
-            copyToRoot = [
-              # similar to pkgs.fakeNss
-              mkRootNss
-              (pkgs.buildEnv {
-                name = "root";
-                paths = sysPackages;
-                pathsToLink = "/bin";
-              })
-              rcRoot
-              # packageGitLocalRepoInContainer
-              packageGitRepoInContainer
-            ];
+
             # Setting maxLayers <=127
             # maxLayers = 123;
             # can be used instead of the manual layer specification below
-            layers = let
-              layerDefs = [
-                {
-                  deps = sysPackages;
-                }
-                {
-                  deps = devPackages;
-                }
-                {
-                  deps = pythonPackages;
-                }
-              ];
-            in
-              foldImageLayers layerDefs;
-            config = {
-              Env = [
-                (let
-                  path = with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages);
-                in "PATH=${path}")
-                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                "NIX_PAGER=cat"
-                "USER=root"
-                "HOME=/root"
-              ];
-              # Use default empty Entrypoint to completely defer to Cmd for flexible override
-              Entrypoint = [];
-              # but provide default Cmd to start zsh
-              Cmd = [
-                "${pkgs.bashInteractive}/bin/bash"
-                "-c"
-                "${pkgs.zsh}/bin/zsh"
-              ];
-            };
+            layers = devcontainerLayers;
+
+            copyToRoot = devcontainerContents;
+            config = devcontainerConfig;
           };
 
           # Very similar devcontainer images can be constructed with either
           # nix2container or dockerTools
           devcontainerDockerTools = pkgs.dockerTools.buildLayeredImage {
             name = "flytezendev";
+            # with mkDockerManifest, tags may be automatically generated from
+            # git metadata
             tag = "latest";
             created = "now";
 
             # maxLayers <=127; defaults to 100
             maxLayers = 123;
 
-            contents = [
-              mkRootNss
-              (pkgs.buildEnv {
-                name = "root";
-                paths = sysPackages;
-                pathsToLink = "/bin";
-              })
-              rcRoot
-              packageGitRepoInContainer
-            ];
-
-            config = {
-              Entrypoint = [];
-              Cmd = ["${pkgs.bashInteractive}/bin/bash" "-c" "${pkgs.zsh}/bin/zsh"];
-              Env = [
-                "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
-                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                "NIX_PAGER=cat"
-                "USER=root"
-                "HOME=/root"
-              ];
-            };
+            contents = devcontainerContents;
+            config = devcontainerConfig;
           };
         };
 
@@ -371,10 +359,10 @@
             };
           };
           version = builtins.getEnv "VERSION";
-          images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
           # aarch64-linux may be disabled for more rapid image builds if there
           # are significant dependency changes during development. Note the
           # usage of `preferWheels` above as well.
+          images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
           # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
         };
       };
