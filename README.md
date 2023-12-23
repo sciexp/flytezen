@@ -89,3 +89,18 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ```
 
 </details>
+
+## Acknowledgements
+
+<details><summary>selected dependencies</summary>
+<p>
+
+* [flocken](https://github.com/mirkolenz/flocken)
+* [flytekit](https://github.com/flyteorg/flytekit)
+* [hydra-zen](https://github.com/mit-ll-responsible-ai/hydra-zen)
+* [poetry2nix](https://github.com/nix-community/poetry2nix)
+
+see also [flake.nix](flake.nix), [pyproject.toml](./pyproject.toml), [.github](./github/), and all of the core tools there and above are built upon
+
+</p>
+</details>
