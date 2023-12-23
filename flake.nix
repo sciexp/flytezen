@@ -109,6 +109,10 @@
           projectDir = ./.;
           overrides = poetry2nixOverrides;
           python = pkgs.python310;
+          # aarch64 cross-compilation on x86_64 may be intolerably slow if
+          # preferWheels is disabled. If all of the individual contributors to
+          # this are identified, it may be possible to use the library-specific
+          # overrides above and disable the global usage of wheels
           preferWheels = true;
           groups = [
             "test"
@@ -141,13 +145,15 @@
             }
           );
 
-        sysPackages = with pkgs; [
-          bashInteractive
-          coreutils
-          cacert
-          nix
-          direnv
-        ] ++ lib.optional (lib.elem system pkgs.shadow.meta.platforms) shadow;
+        sysPackages = with pkgs;
+          [
+            bashInteractive
+            coreutils
+            cacert
+            nix
+            direnv
+          ]
+          ++ lib.optional (lib.elem system pkgs.shadow.meta.platforms) shadow;
 
         mkRootNss = pkgs.runCommand "mkRootNss" {} ''
           mkdir -p $out/etc
@@ -198,16 +204,27 @@
           zsh
         ];
 
+        # The local path can be used instead of `builtins.fetchGit` applied to
+        # the repository source url to be used in `packageGitRepoInContainer` to
+        # place a copy of the local source in the devcontainer if it does not
+        # exist on a ref+rev:
+        # packageGitRepo = ./.;
+        # OR
+        # packageGitRepo = builtins.fetchGit ./.;
+        # should also work as an alternative to directly copying the local repo
+        # path, see https://github.com/NixOS/nix/pull/7706/files; however, the
+        # explicit ref+rev should likely be preferred outside of development
+        # experimentation
         packageGitRepo = builtins.fetchGit {
           name = "flytezen-source";
           url = "https://github.com/sciexp/flytezen.git";
-          # the ref is not strictly required when specifying a rev
-          # but it should be included whenever possible
+          # the ref is not strictly required when specifying a rev but it should
+          # be included whenever possible
           # ref = "main";
           ref = "20-nixci";
-          # the rev can be omitted transiently in development
-          # to track the HEAD of a ref but doing so requires
-          # `--impure` image builds
+          # the rev can be omitted transiently in development to track the HEAD
+          # of a ref but doing so requires `--impure` image builds (this may
+          # already be required for other reasons, e.g. `builtins.getEnv`)
           rev = "1cf7089cb6e79bb240eac0ab95faad6cea866606";
         };
 
@@ -215,18 +232,6 @@
           mkdir -p $out/root
           cp -r ${packageGitRepo} $out/root/flytezen
         '';
-
-        # The following can be used to to place a copy of the local
-        # source in the devcontainer if it does not exist on a ref+rev.
-        # localRepoPath = ./.;
-        # packageGitLocalRepoInContainer = pkgs.runCommand "copy-package-git-local-repo" {} ''
-        #   mkdir -p $out/root
-        #   cp -r ${localRepoPath} $out/root/flytezen
-        # '';
-        #
-        # packageGitLocalRepo = builtins.fetchGit ./.;
-        # should work as an alternative to localRepoPath
-        # see https://github.com/NixOS/nix/pull/7706/files
 
         pythonPackages = [
           (mkPoetryEnvWithSource /root/flytezen/src)
@@ -247,7 +252,8 @@
         packages = {
           default = pkgs.poetry2nix.mkPoetryApplication (
             mkPoetryAttrs
-            # TODO: library not loaded or has external dependencies (e.g. git)
+            # TODO: library not loaded or has system PATH dependencies (e.g. git
+            # vs dulwich)
             # // {
             #   checkPhase = "pytest";
             # }
@@ -315,6 +321,8 @@
             };
           };
 
+          # Very similar devcontainer images can be constructed with either
+          # nix2container or dockerTools
           devcontainerDockerTools = pkgs.dockerTools.buildLayeredImage {
             name = "flytezendev";
             tag = "latest";
@@ -336,7 +344,7 @@
 
             config = {
               Entrypoint = [];
-              Cmd = [ "${pkgs.bashInteractive}/bin/bash" "-c" "${pkgs.zsh}/bin/zsh" ];
+              Cmd = ["${pkgs.bashInteractive}/bin/bash" "-c" "${pkgs.zsh}/bin/zsh"];
               Env = [
                 "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
                 "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
@@ -364,6 +372,9 @@
           };
           version = builtins.getEnv "VERSION";
           images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
+          # aarch64-linux may be disabled for more rapid image builds if there
+          # are significant dependency changes during development. Note the
+          # usage of `preferWheels` above as well.
           # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
         };
       };
