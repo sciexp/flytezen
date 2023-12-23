@@ -318,6 +318,9 @@
             tag = "latest";
             created = "now";
 
+            # maxLayers <=127; defaults to 100
+            maxLayers = 123;
+
             contents = [
               mkRootNss
               (pkgs.buildEnv {
