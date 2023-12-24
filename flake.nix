@@ -228,12 +228,13 @@
           url = "https://github.com/sciexp/flytezen.git";
           # the ref is not strictly required when specifying a rev but it should
           # be included whenever possible or it may be necessary to include
-          allRefs = true;
           # ref = "main";
+          # allRefs = true;
+          ref = "20-nixci";
           # the rev can be omitted transiently in development to track the HEAD
           # of a ref but doing so requires `--impure` image builds (this may
           # already be required for other reasons, e.g. `builtins.getEnv`)
-          rev = "b69ef531088f7a244104bc34f919619f15a8aa8d";
+          # rev = "b69ef531088f7a244104bc34f919619f15a8aa8d";
         };
 
         packageGitRepoToContainer = pkgs.runCommand "copy-package-git-repo" {} ''
