@@ -99,6 +99,7 @@
               if pkgs.stdenv.isDarwin
               then {
                 grpcio = super.grpcio.override {preferWheel = false;};
+                mkdocs-material = super.mkdocs-material.override {preferWheel = false;};
               }
               else {};
           in
@@ -142,6 +143,7 @@
           pkgs.poetry2nix.mkPoetryEnv (
             mkPoetryAttrs
             // {
+              groups = ["test" "docs"];
               extraPackages = ps:
                 with pkgs; [
                   python310Packages.pip
