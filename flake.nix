@@ -99,7 +99,6 @@
               if pkgs.stdenv.isDarwin
               then {
                 grpcio = super.grpcio.override {preferWheel = false;};
-                mkdocs-material = super.mkdocs-material.override {preferWheel = false;};
               }
               else {};
           in
@@ -107,6 +106,7 @@
             // {
               hydra-core = super.hydra-core.override {preferWheel = true;};
               hydra-joblib-launcher = super.hydra-joblib-launcher.override {preferWheel = true;};
+              mkdocs-material = super.mkdocs-material.override {preferWheel = false;};
               scipy = super.scipy.override {preferWheel = true;};
               yarl = super.yarl.override {preferWheel = true;};
             }
