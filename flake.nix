@@ -228,11 +228,10 @@
           # the ref is not strictly required when specifying a rev but it should
           # be included whenever possible
           # ref = "main";
-          ref = "20-nixci";
           # the rev can be omitted transiently in development to track the HEAD
           # of a ref but doing so requires `--impure` image builds (this may
           # already be required for other reasons, e.g. `builtins.getEnv`)
-          rev = "4be4c4360a4058dff1dfc1cac72d3cfd56c92722";
+          rev = "bd0f1924edbe7aca2da52f8f94c5d822c36358eb";
         };
 
         packageGitRepoToContainer = pkgs.runCommand "copy-package-git-repo" {} ''
