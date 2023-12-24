@@ -95,15 +95,18 @@
                   })
               )
               pyPkgsBuildRequirements;
+            conditionalOverrides = if pkgs.stdenv.isDarwin then {
+              grpcio = super.grpcio.override { preferWheel = false; };
+            } else {};
           in
             buildInputsOverrides
             // {
-              grpcio = super.grpcio.override {preferWheel = false;};
               hydra-core = super.hydra-core.override {preferWheel = true;};
               hydra-joblib-launcher = super.hydra-joblib-launcher.override {preferWheel = true;};
               scipy = super.scipy.override {preferWheel = true;};
               yarl = super.yarl.override {preferWheel = true;};
             }
+            // conditionalOverrides
         );
 
         mkPoetryAttrs = {
