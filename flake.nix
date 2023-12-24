@@ -299,14 +299,9 @@
         packages = {
           default = pkgs.poetry2nix.mkPoetryApplication (
             mkPoetryAttrs
-            # TODO: library not loaded or has system PATH dependencies (e.g. git
-            # vs dulwich)
             // {
-              src = pkgs.lib.cleanSource ./.;
               checkPhase = ''
-                runHook preCheck
                 pytest
-                runHook postCheck
               '';
             }
           );
