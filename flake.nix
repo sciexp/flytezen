@@ -239,49 +239,49 @@
         ];
 
         devcontainerLayers = let
-              layerDefs = [
-                {
-                  deps = sysPackages;
-                }
-                {
-                  deps = devPackages;
-                }
-                {
-                  deps = pythonPackages;
-                }
-              ];
-            in
-              foldImageLayers layerDefs;
+          layerDefs = [
+            {
+              deps = sysPackages;
+            }
+            {
+              deps = devPackages;
+            }
+            {
+              deps = pythonPackages;
+            }
+          ];
+        in
+          foldImageLayers layerDefs;
 
         devcontainerContents = [
-              # similar to pkgs.fakeNss
-              mkRootNss
-              (pkgs.buildEnv {
-                name = "root";
-                paths = sysPackages;
-                pathsToLink = "/bin";
-              })
-              rcRoot
-              packageGitRepoInContainer
-            ];
+          # similar to pkgs.fakeNss
+          mkRootNss
+          (pkgs.buildEnv {
+            name = "root";
+            paths = sysPackages;
+            pathsToLink = "/bin";
+          })
+          rcRoot
+          packageGitRepoInContainer
+        ];
 
         devcontainerConfig = {
-              # Use default empty Entrypoint to completely defer to Cmd for flexible override
-              Entrypoint = [];
-              # but provide default Cmd to start zsh
-              Cmd = [
-                "${pkgs.bashInteractive}/bin/bash"
-                "-c"
-                "${pkgs.zsh}/bin/zsh"
-              ];
-              Env = [
-                "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
-                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                "NIX_PAGER=cat"
-                "USER=root"
-                "HOME=/root"
-              ];
-            };
+          # Use default empty Entrypoint to completely defer to Cmd for flexible override
+          Entrypoint = [];
+          # but provide default Cmd to start zsh
+          Cmd = [
+            "${pkgs.bashInteractive}/bin/bash"
+            "-c"
+            "${pkgs.zsh}/bin/zsh"
+          ];
+          Env = [
+            "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
+            "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+            "NIX_PAGER=cat"
+            "USER=root"
+            "HOME=/root"
+          ];
+        };
       in {
         formatter = pkgs.alejandra;
 
