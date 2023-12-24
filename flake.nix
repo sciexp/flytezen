@@ -72,6 +72,7 @@
           feather-format = ["setuptools"];
           flytekit = ["setuptools"];
           flyteidl = ["setuptools"];
+          flytezen = [pkgs.git];
           hydra-core = ["setuptools"];
           hydra-joblib-launcher = ["setuptools"];
           hydra-zen = ["setuptools"];
