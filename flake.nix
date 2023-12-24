@@ -233,7 +233,7 @@
           # the rev can be omitted transiently in development to track the HEAD
           # of a ref but doing so requires `--impure` image builds (this may
           # already be required for other reasons, e.g. `builtins.getEnv`)
-          rev = "a95ba78a32c16432406abd9c41d94aac2b3bed82";
+          rev = "b69ef531088f7a244104bc34f919619f15a8aa8d";
         };
 
         packageGitRepoToContainer = pkgs.runCommand "copy-package-git-repo" {} ''
