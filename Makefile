@@ -363,6 +363,9 @@ DEVCONTAINER_TAG ?= latest
 drundc: ## Run devcontainer. make drundc DEVCONTAINER_TAG=
 	docker run --rm -it flytezendev:$(DEVCONTAINER_TAG)
 
+findeditable: ## Find *-editable.pth files in the nix store.
+	rg --files --glob '*editable.pth' --hidden --no-ignore --follow /nix/store/
+
 #-------
 # system
 #-------
