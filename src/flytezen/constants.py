@@ -1,6 +1,6 @@
 import os
-import subprocess
 
+from dulwich.repo import Repo, NotGitRepository
 from flytezen.logging import configure_logging
 
 logger = configure_logging("flytezen.constants")
@@ -8,16 +8,14 @@ logger = configure_logging("flytezen.constants")
 
 def get_git_repo_root(path="."):
     try:
-        git_root = subprocess.check_output(
-            ["git", "rev-parse", "--show-toplevel"], cwd=path
-        )
-        return git_root.decode("utf-8").strip()
-    except subprocess.CalledProcessError:
-        git_repo_not_found = (
-            "Not inside a Git repository or Git is not installed."
-        )
-        raise OSError(git_repo_not_found)
-
+        repo = Repo.discover(start=path)
+        git_root = repo.path
+        return os.path.normpath(git_root)
+    except NotGitRepository:
+        git_repo_not_found = "Not inside a Git repository. Returning '.'"
+        logger.warning(git_repo_not_found)
+        return os.path.normpath(path)
+        # raise OSError(git_repo_not_found)
 
 repo_root = get_git_repo_root()
 
@@ -36,7 +34,9 @@ if repo_root:
             "Verify you have run `make update_config` in the root of the repository,\n"
             "or manually create the file at the path above.\n\n"
         )
-        raise FileNotFoundError(remote_cluster_config_file_not_found_message)
+        logger.warning(remote_cluster_config_file_not_found_message)
+        REMOTE_CLUSTER_CONFIG_FILE_PATH = LOCAL_CLUSTER_CONFIG_FILE_PATH
+        # raise FileNotFoundError(remote_cluster_config_file_not_found_message)
 
     if not os.path.isfile(LOCAL_CLUSTER_CONFIG_FILE_PATH):
         local_cluster_config_file_not_found_message = (
@@ -61,3 +61,16 @@ if __name__ == "__main__":
 
     pprint(REMOTE_CLUSTER_CONFIG_FILE_PATH)
     pprint(LOCAL_CLUSTER_CONFIG_FILE_PATH)
+
+# import subprocess
+# def get_git_repo_root(path="."):
+#     try:
+#         git_root = subprocess.check_output(
+#             ["git", "rev-parse", "--show-toplevel"], cwd=path
+#         )
+#         return git_root.decode("utf-8").strip()
+#     except subprocess.CalledProcessError:
+#         git_repo_not_found = (
+#             "Not inside a Git repository or Git is not installed."
+#         )
+#         raise OSError(git_repo_not_found)
