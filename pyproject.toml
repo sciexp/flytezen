@@ -45,8 +45,9 @@ scipy = "1.10.1"
 
 # dev dependencies
 black = { version = "23.11.0", optional = true, extras = ["jupyter"] }
-jupytext = { version = "1.16.0", optional = true }
 jupyter_contrib_nbextensions = { version = "0.7.0", optional = true }
+jupyterlab = { version = "4.0.9", optional = true }
+jupytext = { version = "1.16.0", optional = true }
 mkdocs-jupyter = { version = "0.24.6", optional = true }
 mkdocs-material = { version = "9.4.14", optional = true }
 mkdocstrings = { version = "0.24.0", optional = true, extras = ["python"] }
@@ -84,8 +85,9 @@ xdoctest = "1.1.2"
 optional = true
 
 [tool.poetry.group.docs.dependencies]
-jupytext = "1.16.0"
 jupyter_contrib_nbextensions = "0.7.0"
+jupyterlab = "4.0.9"
+jupytext = "1.16.0"
 mkdocs-jupyter = "0.24.6"
 mkdocs-material = "9.4.14"
 mkdocstrings = { version = "0.24.0", extras = ["python"] }
@@ -93,8 +95,9 @@ notebook = "6.4.13"
 
 [tool.poetry.extras]
 docs = [
-  "jupytext",
+  "jupyterlab",
   "jupyter_contrib_nbextensions",
+  "jupytext",
   "mkdocs-jupyter",
   "mkdocs-material",
   "mkdocstrings",
