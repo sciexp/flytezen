@@ -304,7 +304,9 @@
             // {
               src = pkgs.lib.cleanSource ./.;
               checkPhase = ''
+                runHook preCheck
                 pytest
+                runHook postCheck
               '';
             }
           );
