@@ -225,7 +225,7 @@
           # the rev can be omitted transiently in development to track the HEAD
           # of a ref but doing so requires `--impure` image builds (this may
           # already be required for other reasons, e.g. `builtins.getEnv`)
-          rev = "1cf7089cb6e79bb240eac0ab95faad6cea866606";
+          rev = "4be4c4360a4058dff1dfc1cac72d3cfd56c92722";
         };
 
         packageGitRepoInContainer = pkgs.runCommand "copy-package-git-repo" {} ''
@@ -300,9 +300,12 @@
             mkPoetryAttrs
             # TODO: library not loaded or has system PATH dependencies (e.g. git
             # vs dulwich)
-            # // {
-            #   checkPhase = "pytest";
-            # }
+            // {
+              src = pkgs.lib.cleanSource ./.;
+              checkPhase = ''
+                pytest
+              '';
+            }
           );
 
           releaseEnv = pkgs.buildEnv {
