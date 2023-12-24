@@ -250,7 +250,8 @@ def git_info_to_workflow_version_dulwich(
 
     except Exception as e:
         logger.error(f"Error obtaining git information: {e}")
-        raise
+        return "norepo", "nobranch", "0000000"
+        # raise
 
 # def git_info_to_workflow_version(
 #     logger: logging.Logger,
