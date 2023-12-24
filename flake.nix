@@ -157,6 +157,7 @@
             bashInteractive
             coreutils
             cacert
+            gnutar
             nix
             direnv
           ]
@@ -198,7 +199,6 @@
           gh
           git
           gnumake
-          gnutar
           lazygit
           man-db
           man-pages
