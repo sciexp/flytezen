@@ -95,9 +95,12 @@
                   })
               )
               pyPkgsBuildRequirements;
-            conditionalOverrides = if pkgs.stdenv.isDarwin then {
-              grpcio = super.grpcio.override { preferWheel = false; };
-            } else {};
+            conditionalOverrides =
+              if pkgs.stdenv.isDarwin
+              then {
+                grpcio = super.grpcio.override {preferWheel = false;};
+              }
+              else {};
           in
             buildInputsOverrides
             // {
@@ -190,8 +193,6 @@
         '';
 
         devPackages = with pkgs; [
-          poetry
-          neovim
           atuin
           bat
           gh
@@ -200,6 +201,8 @@
           lazygit
           man-db
           man-pages
+          neovim
+          poetry
           poethepoet
           ripgrep
           starship
@@ -209,7 +212,7 @@
         ];
 
         # The local path can be used instead of `builtins.fetchGit` applied to
-        # the repository source url to be used in `packageGitRepoInContainer` to
+        # the repository source url to be used in `packageGitRepoToContainer` to
         # place a copy of the local source in the devcontainer if it does not
         # exist on a ref+rev:
         # packageGitRepo = ./.;
@@ -232,7 +235,7 @@
           rev = "4be4c4360a4058dff1dfc1cac72d3cfd56c92722";
         };
 
-        packageGitRepoInContainer = pkgs.runCommand "copy-package-git-repo" {} ''
+        packageGitRepoToContainer = pkgs.runCommand "copy-package-git-repo" {} ''
           mkdir -p $out/root
           cp -r ${packageGitRepo} $out/root/flytezen
         '';
@@ -265,7 +268,7 @@
             pathsToLink = "/bin";
           })
           rcRoot
-          packageGitRepoInContainer
+          packageGitRepoToContainer
         ];
 
         devcontainerConfig = {
@@ -363,9 +366,8 @@
             };
           };
           version = builtins.getEnv "VERSION";
-          # aarch64-linux may be disabled for more rapid image builds if there
-          # are significant dependency changes during development. Note the
-          # usage of `preferWheels` above as well.
+          # aarch64-linux may be disabled for more rapid image builds during
+          # development. Note the usage of `preferWheels` above as well.
           # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
           images = with self.packages; [x86_64-linux.devcontainerDockerTools];
         };
