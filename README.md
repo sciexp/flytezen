@@ -100,7 +100,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 * [hydra-zen](https://github.com/mit-ll-responsible-ai/hydra-zen)
 * [poetry2nix](https://github.com/nix-community/poetry2nix)
 
-see also [flake.nix](flake.nix), [pyproject.toml](./pyproject.toml), [.github](./github/), and all of the core tools there and above are built upon
+see also [flake.nix](./flake.nix), [pyproject.toml](./pyproject.toml), [.github](./.github/), and all of the core tools there and above are built upon
 
 </p>
 </details>
