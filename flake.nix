@@ -237,9 +237,16 @@
           # rev = "b69ef531088f7a244104bc34f919619f15a8aa8d";
         };
 
+        # The `chmod -R` command to make the root user's home directory writable
+        # is only necessary to allow overwriting the source in the devcontainer
+        # without rebuilding the image. Since it violates the intended
+        # immutability of the image, it can be disabled in release images or
+        # when image rebuilds are used to update the source during development.
         packageGitRepoToContainer = pkgs.runCommand "copy-package-git-repo" {} ''
           mkdir -p $out/root
           cp -r ${packageGitRepo} $out/root/flytezen
+
+          chmod -R 755 $out/root
         '';
 
         pythonPackages = [
