@@ -203,8 +203,10 @@
         devPackages = with pkgs; [
           atuin
           bat
+          gawk
           gh
           git
+          gnugrep
           gnumake
           lazygit
           man-db
