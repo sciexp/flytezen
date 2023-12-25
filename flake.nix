@@ -160,6 +160,7 @@
             coreutils
             cacert
             gnutar
+            gzip
             nix
             direnv
           ]
