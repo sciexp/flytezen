@@ -298,6 +298,8 @@
             "-c"
             "${pkgs.zsh}/bin/zsh"
           ];
+          User = "root";
+          WorkingDir = "/root";
           Env = [
             "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
             "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
