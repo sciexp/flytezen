@@ -363,6 +363,11 @@ DEVCONTAINER_TAG ?= latest
 drundc: ## Run devcontainer. make drundc DEVCONTAINER_TAG=
 	docker run --rm -it flytezendev:$(DEVCONTAINER_TAG)
 
+jupyter: ## Run jupyter lab in devcontainer. make jupyter DEVCONTAINER_TAG=
+	docker run --rm -it -p 8888:8888 \
+	ghcr.io/sciexp/flytezendev:$(DEVCONTAINER_TAG) \
+	jupyter lab --allow-root --ip=0.0.0.0 /root/flytezen
+
 findeditable: ## Find *-editable.pth files in the nix store.
 	rg --files --glob '*editable.pth' --hidden --no-ignore --follow /nix/store/
 
