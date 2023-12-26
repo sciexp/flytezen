@@ -301,11 +301,12 @@
           User = "root";
           WorkingDir = "/root";
           Env = [
-            "PATH=${with pkgs; lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
+            "PATH=${pkgs.lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
             "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
             "NIX_PAGER=cat"
             "USER=root"
             "HOME=/root"
+            "PYTHONPATH=/root/flytezen/src:${pkgs.lib.strings.makeSearchPathOutput "" "lib/python3.10/site-packages" pythonPackages}"
           ];
         };
       in {
