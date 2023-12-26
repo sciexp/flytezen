@@ -391,6 +391,7 @@
           # development. Note the usage of `preferWheels` above as well.
           images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
           # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
+          tags = [(builtins.getEnv "CI_GITHUB_SHA_SHORT") (builtins.getEnv "CI_GITHUB_SHA")];
         };
       };
     };
