@@ -161,7 +161,7 @@ def get_serialization_settings(
             image_config=image_config,
             fast_serialization_settings=FastSerializationSettings(
                 enabled=True,
-                destination_dir="/root",
+                destination_dir="/root/flytezen/src",
                 distribution_location=upload_url,
             ),
         )
