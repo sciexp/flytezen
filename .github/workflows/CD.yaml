@@ -65,6 +65,9 @@ jobs:
           extra-conf: |
             extra-platforms = aarch64-linux
       - uses: DeterminateSystems/magic-nix-cache-action@v2
+      - uses: rlespinasse/github-slug-action@v4
+        with:
+          prefix: CI_
       - run: nix run .#devcontainerManifest --impure --accept-flake-config
         env:
           VERSION: ${{ needs.release.outputs.version }}
