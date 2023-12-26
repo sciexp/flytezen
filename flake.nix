@@ -372,27 +372,36 @@
           };
         };
 
-        legacyPackages.devcontainerManifest = inputs.flocken.legacyPackages.${system}.mkDockerManifest {
-          github = {
-            enable = true;
-            enableRegistry = false;
-            token = builtins.getEnv "GH_TOKEN";
-          };
-          registries = {
-            "ghcr.io" = {
+        legacyPackages.devcontainerManifest = let
+          includedSystems = let
+            envVar = builtins.getEnv "NIX_IMAGE_SYSTEMS";
+          in
+            if envVar == ""
+            then ["x86_64-linux" "aarch64-linux"]
+            else builtins.filter (sys: sys != "") (builtins.split " " envVar);
+        in
+          inputs.flocken.legacyPackages.${system}.mkDockerManifest {
+            github = {
               enable = true;
-              repo = "${gitHubOrg}/${packageName}dev";
-              username = builtins.getEnv "GITHUB_ACTOR";
-              password = builtins.getEnv "GH_TOKEN";
+              enableRegistry = false;
+              token = builtins.getEnv "GH_TOKEN";
             };
+            registries = {
+              "ghcr.io" = {
+                enable = true;
+                repo = "${gitHubOrg}/${packageName}dev";
+                username = builtins.getEnv "GITHUB_ACTOR";
+                password = builtins.getEnv "GH_TOKEN";
+              };
+            };
+            version = builtins.getEnv "VERSION";
+            # aarch64-linux may be disabled for more rapid image builds during
+            # development. Note the usage of `preferWheels` above as well.
+            # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
+            # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
+            images = builtins.map (sys: self.packages.${sys}.devcontainerDockerTools) includedSystems;
+            tags = [(builtins.getEnv "CI_GITHUB_SHA_SHORT") (builtins.getEnv "CI_GITHUB_SHA")];
           };
-          version = builtins.getEnv "VERSION";
-          # aarch64-linux may be disabled for more rapid image builds during
-          # development. Note the usage of `preferWheels` above as well.
-          # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
-          images = with self.packages; [x86_64-linux.devcontainerDockerTools];
-          tags = [(builtins.getEnv "CI_GITHUB_SHA_SHORT") (builtins.getEnv "CI_GITHUB_SHA")];
-        };
       };
     };
 }
