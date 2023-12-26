@@ -71,7 +71,7 @@ jobs:
         env:
           VERSION: ${{ needs.release.outputs.version }}
           GH_TOKEN: ${{ github.token }}
-          NIX_IMAGE_SYSTEMS: "x86_64-linux" 
+          NIX_IMAGE_SYSTEMS: "x86_64-linux aarch64-linux" 
   # publish-pypi:
   #   runs-on: ubuntu-latest
   #   needs: release
