@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,7 +19,7 @@ jobs:
       - run: nix build . --accept-flake-config
   release:
     runs-on: ubuntu-latest
-    needs: check
+    needs: test
     if: ${{ github.repository_owner == 'sciexp' && github.event_name == 'push' }}
     environment:
       name: release
@@ -42,7 +42,7 @@ jobs:
         with:
           name: poetry-build
           path: ./dist
-  deploy-docker:
+  build-images:
     runs-on: ubuntu-latest
     needs: release
     # if: ${{ needs.release.outputs.released == 'true' }}
@@ -56,7 +56,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.release.outputs.git-head }}
-          # ref: "20-nixci"
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -73,18 +72,18 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
           # VERSION: 0.0.0
           GH_TOKEN: ${{ github.token }}
-#   deploy-pypi:
-#     runs-on: ubuntu-latest
-#     needs: release
-#     if: ${{ needs.release.outputs.released == 'true' }}
-#     permissions:
-#       id-token: write
-#     environment:
-#       name: release
-#       url: https://pypi.org/project/flytezen/${{needs.release.outputs.version}}/
-#     steps:
-#       - uses: actions/download-artifact@v3
-#         with:
-#           name: poetry-build
-#           path: ./dist
-#       - uses: pypa/gh-action-pypi-publish@release/v1
+  # publish-pypi:
+  #   runs-on: ubuntu-latest
+  #   needs: release
+  #   if: ${{ needs.release.outputs.released == 'true' }}
+  #   permissions:
+  #     id-token: write
+  #   environment:
+  #     name: release
+  #     url: https://pypi.org/project/flytezen/${{needs.release.outputs.version}}/
+  #   steps:
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         name: poetry-build
+  #         path: ./dist
+  #     - uses: pypa/gh-action-pypi-publish@release/v1
