@@ -188,8 +188,6 @@
 
           mkdir -p $out/tmp
           mkdir -p $out/root
-
-          chmod -R 755 $out/root
         '';
 
         rcRoot = pkgs.runCommand "rcRoot" {} ''
@@ -200,8 +198,6 @@
           eval "\$(starship init zsh)"
           eval "\$(atuin init zsh)"
           EOF
-
-          chmod -R 755 $out/root
         '';
 
         devPackages = with pkgs; [
