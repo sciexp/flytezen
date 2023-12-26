@@ -139,7 +139,11 @@
           }
         );
 
-        mkPoetryEnvWithSource = src:
+        gitHubOrg = "sciexp";
+        packageName = "flytezen";
+        packageSrcPath = "/root/${packageName}/src";
+
+        mkPoetryEnvWithSource = packageName: src:
           pkgs.poetry2nix.mkPoetryEnv (
             mkPoetryAttrs
             // {
@@ -149,7 +153,7 @@
                   python310Packages.pip
                 ];
               editablePackageSources = {
-                flytezen = src;
+                ${packageName} = src;
               };
             }
           );
@@ -233,8 +237,8 @@
         # explicit ref+rev should likely be preferred outside of development
         # experimentation
         packageGitRepo = builtins.fetchGit {
-          name = "flytezen-source";
-          url = "https://github.com/sciexp/flytezen.git";
+          name = "${packageName}-source";
+          url = "https://github.com/${gitHubOrg}/${packageName}.git";
           # the ref is not strictly required when specifying a rev but it should
           # be included whenever possible or it may be necessary to include
           # ref = "main";
@@ -253,13 +257,13 @@
         # when image rebuilds are used to update the source during development.
         packageGitRepoToContainer = pkgs.runCommand "copy-package-git-repo" {} ''
           mkdir -p $out/root
-          cp -r ${packageGitRepo} $out/root/flytezen
+          cp -r ${packageGitRepo} $out/root/${packageName}
 
           chmod -R 755 $out/root
         '';
 
         pythonPackages = [
-          (mkPoetryEnvWithSource /root/flytezen/src)
+          (mkPoetryEnvWithSource packageName packageSrcPath)
         ];
 
         devcontainerLayers = let
@@ -306,7 +310,7 @@
             "NIX_PAGER=cat"
             "USER=root"
             "HOME=/root"
-            "PYTHONPATH=/root/flytezen/src:${pkgs.lib.strings.makeSearchPathOutput "" "lib/python3.10/site-packages" pythonPackages}"
+            "PYTHONPATH=${packageSrcPath}:${pkgs.lib.strings.makeSearchPathOutput "" "lib/python3.10/site-packages" pythonPackages}"
           ];
         };
       in {
@@ -314,10 +318,10 @@
 
         devShells = {
           default = pkgs.mkShell {
-            name = "flytezen";
+            name = packageName;
             buildInputs = with pkgs;
               [
-                (mkPoetryEnvWithSource ./src)
+                (mkPoetryEnvWithSource packageName ./src)
               ]
               ++ devPackages;
           };
@@ -341,7 +345,7 @@
           # Very similar devcontainer images can be constructed with either
           # nix2container or dockerTools
           devcontainerNix2Container = nix2container.buildImage {
-            name = "flytezennixdev";
+            name = "${packageName}nixdev";
             # generally prefer the default image hash to manual tagging
             # tag = "latest";
             initializeNixDatabase = true;
@@ -358,7 +362,7 @@
           # Very similar devcontainer images can be constructed with either
           # nix2container or dockerTools
           devcontainerDockerTools = pkgs.dockerTools.buildLayeredImage {
-            name = "flytezendev";
+            name = "${packageName}dev";
             # with mkDockerManifest, tags may be automatically generated from
             # git metadata
             tag = "latest";
@@ -381,7 +385,7 @@
           registries = {
             "ghcr.io" = {
               enable = true;
-              repo = "sciexp/flytezendev";
+              repo = "${gitHubOrg}/${packageName}dev";
               username = builtins.getEnv "GITHUB_ACTOR";
               password = builtins.getEnv "GH_TOKEN";
             };
