@@ -14,9 +14,8 @@ from datetime import timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Tuple, Union
 
-import plumbum
-from dulwich.repo import Repo
 from dataclasses_json import dataclass_json
+from dulwich.repo import Repo
 from flytekit import WorkflowExecutionPhase
 from flytekit.core.base_task import PythonTask
 from flytekit.core.workflow import WorkflowBase
@@ -172,6 +171,7 @@ def check_required_env_vars(
         return False
     return True
 
+
 def git_info_to_workflow_version_dulwich(
     logger: logging.Logger,
 ) -> Tuple[str, str, str]:
@@ -202,20 +202,27 @@ def git_info_to_workflow_version_dulwich(
         >>> print(repo_name, branch, short_sha)
     """
     try:
-        repo = Repo('.')
+        repo = Repo(".")
         head_commit = repo.head().decode()
 
         config_stack = repo.get_config_stack()
         try:
-            remote_url = config_stack.get((b'remote', b'origin'), b'url').decode()
-            repo_name = os.path.basename(remote_url.rstrip('/'))
-            if repo_name.endswith('.git'):
+            remote_url = config_stack.get(
+                (b"remote", b"origin"), b"url"
+            ).decode()
+            repo_name = os.path.basename(remote_url.rstrip("/"))
+            if repo_name.endswith(".git"):
                 repo_name = repo_name[:-4]
         except KeyError:
-            logger.warning("Remote origin URL not found. Using directory name as repository name.")
-            repo_name = os.path.basename(repo.path.rstrip('/'))
+            logger.warning(
+                "Remote origin URL not found. Using directory name as repository name."
+            )
+            repo_name = os.path.basename(repo.path.rstrip("/"))
 
-        branches = {name.decode(): sha for name, sha in repo.refs.as_dict(b'refs/heads').items()}
+        branches = {
+            name.decode(): sha
+            for name, sha in repo.refs.as_dict(b"refs/heads").items()
+        }
         branch_name = None
         for name, sha in branches.items():
             if sha == repo.head():
@@ -223,7 +230,9 @@ def git_info_to_workflow_version_dulwich(
                 break
 
         if branch_name is None:
-            logger.warning("Repository is in detached HEAD state. Attempting to find source branch.")
+            logger.warning(
+                "Repository is in detached HEAD state. Attempting to find source branch."
+            )
             commit_message = repo[repo.head()].message.decode()
             match = re.search(r"Merge ([0-9a-f]{40}) into", commit_message)
             if match:
@@ -234,9 +243,10 @@ def git_info_to_workflow_version_dulwich(
                         branch_name = branch
                         break
                 else:
-                    raise ValueError("Unable to extract source commit SHA from commit message.")
+                    no_commit_sha_in_message = "Unable to extract source commit SHA from commit message."
+                    raise ValueError(no_commit_sha_in_message)
             else:
-                branch_name = 'detached'
+                branch_name = "detached"
 
         short_sha = head_commit[:7]
 
@@ -252,6 +262,7 @@ def git_info_to_workflow_version_dulwich(
         logger.error(f"Error obtaining git information: {e}")
         return "norepo", "nobranch", "0000000"
         # raise
+
 
 # def git_info_to_workflow_version(
 #     logger: logging.Logger,

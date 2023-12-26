@@ -328,7 +328,9 @@ def main() -> None:
 
     store(generate_hydra_config())
 
-    repo_name, git_branch, git_short_sha = git_info_to_workflow_version_dulwich(logger)
+    repo_name, git_branch, git_short_sha = git_info_to_workflow_version_dulwich(
+        logger
+    )
 
     workflow_image = os.environ.get(
         "WORKFLOW_IMAGE",

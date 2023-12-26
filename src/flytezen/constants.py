@@ -1,6 +1,7 @@
 import os
 
-from dulwich.repo import Repo, NotGitRepository
+from dulwich.repo import NotGitRepository, Repo
+
 from flytezen.logging import configure_logging
 
 logger = configure_logging("flytezen.constants")
@@ -16,6 +17,7 @@ def get_git_repo_root(path="."):
         logger.warning(git_repo_not_found)
         return os.path.normpath(path)
         # raise OSError(git_repo_not_found)
+
 
 repo_root = get_git_repo_root()
 
