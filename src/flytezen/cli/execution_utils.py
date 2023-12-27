@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from dataclasses_json import dataclass_json
 from dulwich.repo import Repo
+from dulwich.porcelain import fetch
 from flytekit import WorkflowExecutionPhase
 from flytekit.core.base_task import PythonTask
 from flytekit.core.workflow import WorkflowBase
@@ -204,6 +205,8 @@ def git_info_to_workflow_version_dulwich(
     try:
         repo = Repo(".")
         head_commit = repo.head().decode()
+        fetch(repo, "origin", "+refs/heads/*:refs/remotes/origin/*")
+        logger.info("Fetched refs from remote.")
 
         config_stack = repo.get_config_stack()
         try:
@@ -223,6 +226,7 @@ def git_info_to_workflow_version_dulwich(
             name.decode(): sha
             for name, sha in repo.refs.as_dict(b"refs/heads").items()
         }
+        logger.info(f"Found branches:\n{branches}")
         branch_name = None
         for name, sha in branches.items():
             if sha == repo.head():
@@ -241,10 +245,11 @@ def git_info_to_workflow_version_dulwich(
                 for branch, sha in branches.items():
                     if sha.decode() == source_commit_sha:
                         branch_name = branch
+                        head_commit = source_commit_sha
                         break
                 else:
-                    no_commit_sha_in_message = "Unable to extract source commit SHA from commit message."
-                    raise ValueError(no_commit_sha_in_message)
+                    no_source_commit_sha_in_refs = "Unable to extract source commit SHA from commit message."
+                    raise ValueError(no_source_commit_sha_in_refs)
             else:
                 branch_name = "detached"
 
