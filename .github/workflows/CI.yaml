@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+      - beta
     paths-ignore: ["docs/**", "scripts/**", "**.md", "*", "!pyproject.toml"]
   pull_request:
     branches:
       - main
+      - beta
     types: [opened, synchronize, labeled, reopened, ready_for_review]
     paths-ignore: ["docs/**", "scripts/**", "**.md", "*", "!pyproject.toml"]
   
