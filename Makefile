@@ -14,7 +14,7 @@ GIT_SHORT_SHA = $(shell git rev-parse --short HEAD)
 GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 
 ##@ Utility
-help: ## Display this help. (Default)
+help: ## Display this help. (Default). Update `.PHONY: target` in Makefile if target name could conflict with file or directory.
 # based on "https://gist.github.com/prwhite/8168133?permalink_comment_id=4260260#gistcomment-4260260"
 	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
@@ -359,13 +359,60 @@ cache: ## Push devshell to cachix
 devcontainer: ## Build devcontainer.
 	nix run .#devcontainerNix2Container.copyToDockerDaemon --accept-flake-config --impure
 
-DEVCONTAINER_TAG ?= latest
-drundc: ## Run devcontainer. make drundc DEVCONTAINER_TAG=
-	docker run --rm -it flytezendev:$(DEVCONTAINER_TAG)
+# The default value for DEVCONTAINER_IMAGE FQN can be completely overriden to
+# support specification of tags or digests (see .example.env and create .env)
+DEVCONTAINER_IMAGE ?= ghcr.io/sciexp/flytezendev
+# DEVCONTAINER_IMAGE=ghcr.io/sciexp/flytezendev:main
+# DEVCONTAINER_IMAGE=ghcr.io/sciexp/flytezendev@sha256:055bb57be472144bb140e20870320da8d9fa39daf69a57d2464596b974d34138
 
-jupyter: ## Run jupyter lab in devcontainer. make jupyter DEVCONTAINER_TAG=
+drundc: ## Run devcontainer. make drundc DEVCONTAINER_IMAGE=
+	docker run --rm -it $(DEVCONTAINER_IMAGE)
+
+.PHONY: jupyter
+jupyter: ## Run jupyter lab in devcontainer. make jupyter DEVCONTAINER_IMAGE=ghcr.io/sciexp/flytezendev@sha256:055bb57be472144bb140e20870320da8d9fa39daf69a57d2464596b974d34138
+	@echo "Attempting to start jupyter lab in"
+	@echo
+	@echo "DEVCONTAINER_IMAGE: $(DEVCONTAINER_IMAGE)"
+	@echo
+	docker compose -f containers/compose.yaml up -d jupyter
+	@echo
+	$(MAKE) jupyter_logs
+
+jupyter_logs: ## Print docker-compose logs.
+	@echo
+	@echo "Ctrl/cmd + click the http://127.0.0.1:8888/lab?token=... link to open jupyter lab in your default browser"
+	@echo
+	@trap 'printf "\n  use \`make jupyter_logs\` to reattach to logs or \`make jupyter_down\` to terminate\n\n"; exit 2' SIGINT; \
+	while true; do \
+		docker compose -f containers/compose.yaml logs -f jupyter; \
+	done
+
+jupyter_down: compose_list
+jupyter_down: ## Stop docker-compose containers.
+	docker compose -f containers/compose.yaml down jupyter
+	$(MAKE) compose_list
+
+compose_list: ## List docker-compose containers.
+	@echo
+	docker compose ls
+	@echo
+	docker compose -f containers/compose.yaml ps --services
+	@echo
+
+image_digests: ## Print image digests.
+	@echo
+	docker images -a --digests $(DEVCONTAINER_IMAGE)
+	@echo
+
+.PHONY: digest
+digest: ## Print image digest from tag. make digest DEVCONTAINER_IMAGE=
+	@echo
+	docker inspect --format='{{index .RepoDigests 0}}' $(DEVCONTAINER_IMAGE)
+	@echo
+
+jupyter_manual: ## Prefer `make -n jupyter` to this target. make jupyter_manual DEVCONTAINER_IMAGE=
 	docker run --rm -it -p 8888:8888 \
-	ghcr.io/sciexp/flytezendev:$(DEVCONTAINER_TAG) \
+	$(DEVCONTAINER_IMAGE) \
 	jupyter lab --allow-root --ip=0.0.0.0 /root/flytezen
 
 findeditable: ## Find *-editable.pth files in the nix store.
