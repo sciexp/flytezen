@@ -247,10 +247,6 @@ jobs:
             echo "GIT_SHA=$CI_GITHUB_SHA" >> $GITHUB_ENV
             echo "GIT_SHA_SHORT=$CI_GITHUB_SHA_SHORT" >> $GITHUB_ENV
           fi
-          echo "Using Git Repository Name: $GIT_REPO_NAME"
-          echo "Using Git Reference: $GIT_REF"
-          echo "Using Git SHA: $GIT_SHA"
-          echo "Using Git SHA Short: $GIT_SHA_SHORT"
       - name: Build nix images
         run: |
           echo "Using Git Repository Name: $GIT_REPO_NAME"
@@ -281,9 +277,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
   
-    - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v4
-
     - name: Setup environment
       uses: ./.github/actions/setup_environment
       with:
