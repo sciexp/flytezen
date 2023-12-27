@@ -306,6 +306,10 @@
             "NIX_PAGER=cat"
             "USER=root"
             "HOME=/root"
+            "GIT_REPO_NAME=${builtins.getEnv "GIT_REPO_NAME"}"
+            "GIT_REF=${builtins.getEnv "GIT_REF"}"
+            "GIT_SHA=${builtins.getEnv "GIT_SHA"}"
+            "GIT_SHA_SHORT=${builtins.getEnv "GIT_SHA_SHORT"}"
             "PYTHONPATH=${packageSrcPath}:${pkgs.lib.strings.makeSearchPathOutput "" "lib/python3.10/site-packages" pythonPackages}"
           ];
         };
@@ -400,7 +404,7 @@
             # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
             # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
             images = builtins.map (sys: self.packages.${sys}.devcontainerDockerTools) includedSystems;
-            tags = [(builtins.getEnv "CI_GITHUB_SHA_SHORT") (builtins.getEnv "CI_GITHUB_SHA")];
+            tags = [(builtins.getEnv "GIT_SHA_SHORT") (builtins.getEnv "GIT_SHA")];
           };
       };
     };
