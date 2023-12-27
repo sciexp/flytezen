@@ -398,6 +398,8 @@ compose_list: ## List docker-compose containers.
 	@echo
 	docker compose -f containers/compose.yaml ps --services
 	@echo
+	docker compose -f containers/compose.yaml ps
+	@echo
 
 image_digests: ## Print image digests.
 	@echo
