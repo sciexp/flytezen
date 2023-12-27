@@ -1,0 +1,13 @@
+version: '3'
+name: flytezen
+services:
+  jupyter:
+    image: "${DEVCONTAINER_IMAGE:-ghcr.io/sciexp/flytezendev:main}"
+    command: jupyter lab --allow-root --ip=0.0.0.0 /root/flytezen
+    ports:
+      - "8888:8888"
+    tty: true
+    stdin_open: true
+    restart: "no"
+    volumes:
+      - ${PWD}:/root/flytezen
