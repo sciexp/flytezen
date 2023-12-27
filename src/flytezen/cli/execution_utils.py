@@ -15,8 +15,8 @@ from textwrap import dedent
 from typing import Any, Dict, List, Tuple, Union
 
 from dataclasses_json import dataclass_json
-from dulwich.repo import Repo
 from dulwich.porcelain import fetch
+from dulwich.repo import NotGitRepository, Repo
 from flytekit import WorkflowExecutionPhase
 from flytekit.core.base_task import PythonTask
 from flytekit.core.workflow import WorkflowBase
@@ -198,75 +198,70 @@ def git_info_to_workflow_version_dulwich(
         >>> logger = logging.getLogger()
         >>> # assuming this test is run in a git repository
         >>> repo_name, branch, short_sha = git_info_to_workflow_version_dulwich(logger)
+        >>> print(repo_name, branch, short_sha)
         >>> print(isinstance(repo_name, str), isinstance(branch, str), isinstance(short_sha, str))
         True True True
-        >>> print(repo_name, branch, short_sha)
     """
     try:
-        repo = Repo(".")
-        head_commit = repo.head().decode()
-        fetch(repo, "origin", "+refs/heads/*:refs/remotes/origin/*")
-        logger.info("Fetched refs from remote.")
-
-        config_stack = repo.get_config_stack()
         try:
+            repo = Repo(".")
+            fetch(repo, "origin", "+refs/heads/*:refs/remotes/origin/*")
+            logger.info("Fetched refs from remote.")
+
+            config_stack = repo.get_config_stack()
             remote_url = config_stack.get(
                 (b"remote", b"origin"), b"url"
             ).decode()
-            repo_name = os.path.basename(remote_url.rstrip("/"))
-            if repo_name.endswith(".git"):
-                repo_name = repo_name[:-4]
-        except KeyError:
-            logger.warning(
-                "Remote origin URL not found. Using directory name as repository name."
-            )
-            repo_name = os.path.basename(repo.path.rstrip("/"))
+            repo_name = os.path.basename(remote_url.rstrip("/")).rstrip(".git")
 
-        branches = {
-            name.decode(): sha
-            for name, sha in repo.refs.as_dict(b"refs/heads").items()
-        }
-        logger.info(f"Found branches:\n{branches}")
-        branch_name = None
-        for name, sha in branches.items():
-            if sha == repo.head():
-                branch_name = name
-                break
+            head_commit = repo.head()
+            branch_name = None
+            for ref in repo.get_refs():
+                if (
+                    ref.startswith(b"refs/heads/")
+                    and repo.get_refs()[ref] == head_commit
+                ):
+                    branch_name = ref.decode()[11:]
+                    break
 
-        if branch_name is None:
-            logger.warning(
-                "Repository is in detached HEAD state. Attempting to find source branch."
-            )
-            commit_message = repo[repo.head()].message.decode()
-            match = re.search(r"Merge ([0-9a-f]{40}) into", commit_message)
-            if match:
-                source_commit_sha = match.group(1)
-
-                for branch, sha in branches.items():
-                    if sha.decode() == source_commit_sha:
-                        branch_name = branch
-                        head_commit = source_commit_sha
-                        break
-                else:
-                    no_source_commit_sha_in_refs = "Unable to extract source commit SHA from commit message."
-                    raise ValueError(no_source_commit_sha_in_refs)
-            else:
-                branch_name = "detached"
-
-        short_sha = head_commit[:7]
-
-        for string in [repo_name, branch_name, short_sha]:
-            if any(char.isupper() for char in string):
+            if branch_name is None:
                 logger.warning(
-                    f"String '{string}' contains capitalized characters. Converting to lowercase."
+                    "Repository is in detached HEAD state. Attempting to find source branch."
                 )
+                commit_message = repo[head_commit].message.decode()
+                match = re.search(r"Merge ([0-9a-f]{40}) into", commit_message)
+                if match:
+                    source_commit_sha = match.group(1).encode("utf-8")
+                    for ref in repo.get_refs():
+                        if (
+                            ref.startswith(b"refs/heads/")
+                            and repo.get_refs()[ref] == source_commit_sha
+                        ):
+                            branch_name = ref.decode()[11:]
+                            head_commit = source_commit_sha
+                            break
+                if not branch_name:
+                    branch_name = "detached"
 
-        return repo_name.lower(), branch_name.lower(), short_sha.lower()
+            short_sha = head_commit.decode("utf-8")[:7]
+
+        except NotGitRepository:
+            logger.warning("Not in a Git repository. Using fallback values.")
+            repo_name = os.environ.get(
+                "GIT_REPO_NAME", os.path.basename(os.getcwd())
+            )
+            branch_name = os.environ.get("GIT_REF", "nobranch")
+            short_sha = os.environ.get("GIT_SHA_SHORT", "0000000")
+
+        repo_name = repo_name.lower()
+        branch_name = branch_name.lower()
+        short_sha = short_sha.lower()
+
+        return repo_name, branch_name, short_sha
 
     except Exception as e:
         logger.error(f"Error obtaining git information: {e}")
         return "norepo", "nobranch", "0000000"
-        # raise
 
 
 # def git_info_to_workflow_version(
