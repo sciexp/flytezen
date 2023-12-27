@@ -390,6 +390,9 @@
               enableRegistry = false;
               token = builtins.getEnv "GH_TOKEN";
             };
+            autoTags = {
+              branch = false;
+            };
             registries = {
               "ghcr.io" = {
                 enable = true;
@@ -404,7 +407,7 @@
             # images = with self.packages; [x86_64-linux.devcontainerDockerTools aarch64-linux.devcontainerDockerTools];
             # images = with self.packages; [x86_64-linux.devcontainerDockerTools];
             images = builtins.map (sys: self.packages.${sys}.devcontainerDockerTools) includedSystems;
-            tags = [(builtins.getEnv "GIT_SHA_SHORT") (builtins.getEnv "GIT_SHA")];
+            tags = [(builtins.getEnv "GIT_SHA_SHORT") (builtins.getEnv "GIT_SHA") (builtins.getEnv "GIT_REF")];
           };
       };
     };
