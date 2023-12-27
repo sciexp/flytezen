@@ -205,8 +205,8 @@ def git_info_to_workflow_version_dulwich(
     try:
         try:
             repo = Repo(".")
-            fetch(repo, "origin", "+refs/heads/*:refs/remotes/origin/*")
-            logger.info("Fetched refs from remote.")
+            # fetch(repo, "origin", "+refs/heads/*:refs/remotes/origin/*")
+            # logger.info("Fetched refs from remote.")
 
             config_stack = repo.get_config_stack()
             remote_url = config_stack.get(
