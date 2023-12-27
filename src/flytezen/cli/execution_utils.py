@@ -215,13 +215,15 @@ def git_info_to_workflow_version_dulwich(
             repo_name = os.path.basename(remote_url.rstrip("/")).rstrip(".git")
 
             head_commit = repo.head()
+            branches = {
+                name.decode(): sha
+                for name, sha in repo.refs.as_dict(b"refs/heads").items()
+            }
+            logger.info(f"Found branches:\n{branches}")
             branch_name = None
-            for ref in repo.get_refs():
-                if (
-                    ref.startswith(b"refs/heads/")
-                    and repo.get_refs()[ref] == head_commit
-                ):
-                    branch_name = ref.decode()[11:]
+            for name, sha in branches.items():
+                if sha == repo.head():
+                    branch_name = name
                     break
 
             if branch_name is None:
@@ -232,12 +234,9 @@ def git_info_to_workflow_version_dulwich(
                 match = re.search(r"Merge ([0-9a-f]{40}) into", commit_message)
                 if match:
                     source_commit_sha = match.group(1).encode("utf-8")
-                    for ref in repo.get_refs():
-                        if (
-                            ref.startswith(b"refs/heads/")
-                            and repo.get_refs()[ref] == source_commit_sha
-                        ):
-                            branch_name = ref.decode()[11:]
+                    for branch, sha in branches.items():
+                        if sha.decode() == source_commit_sha:
+                            branch_name = branch
                             head_commit = source_commit_sha
                             break
                 if not branch_name:
