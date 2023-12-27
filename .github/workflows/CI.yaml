@@ -259,7 +259,8 @@ jobs:
           NIX_IMAGE_SYSTEMS: "x86_64-linux" 
 
   execute-workflow:
-    needs: [config-workflows, build-nix-images, set-variables]
+    # needs: [config-workflows, build-nix-images, set-variables]
+    needs: [config-workflows, set-variables]
     if: ${{ needs.set-variables.outputs.skip_ci != 'true' && (contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow)) }}
     runs-on: ubuntu-latest
     concurrency:
@@ -290,7 +291,7 @@ jobs:
         path: .flyte/
 
     - name: Setup tmate debug session
-      if: ${{ inputs.debug_enabled == 'true' }}
+      # if: ${{ inputs.debug_enabled == 'true' }}
       uses: mxschmitt/action-tmate@v3
   
     - name: Execute workflow
