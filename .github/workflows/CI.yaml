@@ -197,7 +197,7 @@ jobs:
       - run: nix flake check --impure --accept-flake-config
       - run: nix build . --accept-flake-config
 
-  build-images:
+  build-docker-images:
     needs: [set-variables]
     if: ${{ needs.set-variables.outputs.skip_ci != 'true' && (contains(github.event.pull_request.labels.*.name, 'build-images') || contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_build_images)) }}
     uses: ./.github/workflows/build-images.yaml
@@ -246,7 +246,16 @@ jobs:
             echo "GIT_SHA=$CI_GITHUB_SHA" >> $GITHUB_ENV
             echo "GIT_SHA_SHORT=$CI_GITHUB_SHA_SHORT" >> $GITHUB_ENV
           fi
-      - run: nix run .#devcontainerManifest --impure --accept-flake-config
+          echo "Using Git Repository Name: $GIT_REPO_NAME"
+          echo "Using Git Reference: $GIT_REF"
+          echo "Using Git SHA: $GIT_SHA"
+          echo "Using Git SHA Short: $GIT_SHA_SHORT"
+      - run: |
+          echo "Using Git Repository Name: $GIT_REPO_NAME"
+          echo "Using Git Reference: $GIT_REF"
+          echo "Using Git SHA: $GIT_SHA"
+          echo "Using Git SHA Short: $GIT_SHA_SHORT"
+          nix run .#devcontainerManifest --impure --accept-flake-config
         env:
           GH_TOKEN: ${{ github.token }}
           NIX_IMAGE_SYSTEMS: "x86_64-linux" 
