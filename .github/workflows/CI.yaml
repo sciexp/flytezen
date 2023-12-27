@@ -224,9 +224,6 @@ jobs:
       name: release
       url: https://ghcr.io/sciexp/flytezendev
     steps:
-      - uses: rlespinasse/github-slug-action@v4
-        with:
-          prefix: CI_
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
         with:
@@ -236,6 +233,19 @@ jobs:
           extra-conf: |
             extra-platforms = aarch64-linux
       - uses: DeterminateSystems/magic-nix-cache-action@v2
+      - uses: rlespinasse/github-slug-action@v4
+        with:
+          prefix: CI_
+      - run: |
+          echo "GIT_REPO_NAME=$CI_GITHUB_REPOSITORY_NAME_PART" >> $GITHUB_ENV
+          echo "GIT_REF=$CI_GITHUB_REF_NAME" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "GIT_SHA=$CI_GITHUB_EVENT_PULL_REQUEST_SHA" >> $GITHUB_ENV
+            echo "GIT_SHA_SHORT=$CI_GITHUB_EVENT_PULL_REQUEST_SHA_SHORT" >> $GITHUB_ENV
+          else
+            echo "GIT_SHA=$CI_GITHUB_SHA" >> $GITHUB_ENV
+            echo "GIT_SHA_SHORT=$CI_GITHUB_SHA_SHORT" >> $GITHUB_ENV
+          fi
       - run: nix run .#devcontainerManifest --impure --accept-flake-config
         env:
           GH_TOKEN: ${{ github.token }}
