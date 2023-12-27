@@ -2,6 +2,11 @@
 
 A template for hydra-zen configuration of Flyte workflow execution.
 
+- [Quick start](#quick-start)
+- [Layout](#layout)
+- [Acknowledgements](#acknowledgements)
+
+
 ## Layout
 
 <details>
