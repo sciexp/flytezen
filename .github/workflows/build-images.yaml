@@ -72,6 +72,9 @@ jobs:
     - name: build
       run: |
         echo "CI commit sha: $CI_GITHUB_SHA"
+        echo "CI commit PR HEAD sha: $CI_GITHUB_EVENT_PULL_REQUEST_HEAD_SHA"
+        echo "commit PR HEAD sha: $GITHUB_EVENT_PULL_REQUEST_HEAD_SHA"
+        echo "commit PR HEAD sha short: $GITHUB_EVENT_PULL_REQUEST_HEAD_SHA_SHORT"
         echo "GitHub ref: $GITHUB_REF"
         echo "CI ref: $CI_GITHUB_REF"
         echo "CI ref name: $CI_GITHUB_REF_NAME"
@@ -82,7 +85,7 @@ jobs:
         argo version --short
 
         argo submit .argo/build.yaml \
-          --generate-name="${CI_GITHUB_REPOSITORY_NAME_PART_SLUG}-build-${CI_GITHUB_SHA_SHORT}-" \
+          --generate-name="${CI_GITHUB_REPOSITORY_NAME_PART_SLUG}-build-${CI_GITHUB_EVENT_PULL_REQUEST_HEAD_SHA_SHORT}-" \
           -p mode="${MODE}" \
           -p imageName1="${CI_GITHUB_REPOSITORY_NAME_PART_SLUG}" \
           -p containerFilePath1="containers/pkg.Dockerfile" \
@@ -90,7 +93,7 @@ jobs:
           -p containerFilePath2="containers/gpu.Dockerfile" \
           -p appName="${CI_GITHUB_REPOSITORY_NAME_PART_SLUG}" \
           -p branch="${CI_GITHUB_REF_NAME}" \
-          -p shortSha="${CI_GITHUB_SHA_SHORT}" \
+          -p shortSha="${CI_GITHUB_EVENT_PULL_REQUEST_HEAD_SHA_SHORT}" \
           -p containerRegistryURL1="${CONTAINER_REGISTRY_URL1}" \
           -p containerRegistryURL2="${CONTAINER_REGISTRY_URL2}" \
           -p gitUrlNoProtocol="github.com/${CI_GITHUB_REPOSITORY_OWNER_PART_SLUG}" \
