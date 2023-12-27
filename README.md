@@ -8,7 +8,11 @@ A template for hydra-zen configuration of Flyte workflow execution.
 
 ## Quick start
 
+See `make | grep codespace`, run `make codespace_create code`, or
+
 [![codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/?hide_repo_select=true&ref=main&repo=723447526&skip_quickstart=true&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
+This is almost exclusively intended for a zero install demonstration of the supported development environment that depends upon the [nix](https://nixos.org/) package manager or open container images built with it. See `make | grep nix` or `make -n setup_dev` for the non-zero install approach.
 
 ## Layout
 
