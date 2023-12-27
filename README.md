@@ -26,6 +26,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 │   │   │   └── action.yml
 │   │   └── tag-build-push-container
 │   ├── workflows
+│   │   ├── CD.yaml
 │   │   ├── CI.yaml
 │   │   ├── build-images.yaml
 │   │   └── labeler.yml
@@ -85,7 +86,7 @@ A template for hydra-zen configuration of Flyte workflow execution.
 ├── pyproject.toml
 └── requirements.txt
 
-18 directories, 57 files
+18 directories, 58 files
 ```
 
 </details>
