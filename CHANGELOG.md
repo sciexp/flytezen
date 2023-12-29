@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/sciexp/flytezen/compare/v1.0.1...v1.0.2) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** do not ignore changes in flake and lock files ([97b5db5](https://github.com/sciexp/flytezen/commit/97b5db55d30b961ce8d835748d7e646f92b308dd))
+* **flake:** use main ref for container repo ([1b5f714](https://github.com/sciexp/flytezen/commit/1b5f714fc0a7d812f5e176cbed36a01083ad3439))
+
 ## [1.0.1](https://github.com/sciexp/flytezen/compare/v1.0.0...v1.0.1) (2023-12-29)
 
 
