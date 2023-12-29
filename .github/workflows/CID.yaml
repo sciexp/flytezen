@@ -361,7 +361,7 @@ jobs:
     needs: [set-variables, release]
     if: ${{ needs.release.outputs.released == 'true' }}
     concurrency:
-      group: bri-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}-${{ needs.set-variables.outputs.mode }}
+      group: bri-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
       cancel-in-progress: true
     permissions:
       contents: read
@@ -372,7 +372,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
+          ref: ${{ needs.release.outputs.git-head }}
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -424,9 +424,10 @@ jobs:
         - uses: pypa/gh-action-pypi-publish@release/v1
 
 
-  build-docs:
+  test-docs-build:
     runs-on: ubuntu-latest
     needs: set-variables
+    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && needs.set-variables.outputs.skip_tests != 'true' }}
     strategy:
       matrix:
         python_version: ['3.10']
@@ -445,15 +446,38 @@ jobs:
           debug_enabled: ${{ needs.set-variables.outputs.debug }}
       - name: Build
         run: make docs-build
+
+
+  build-release-docs:
+    runs-on: ubuntu-latest
+    needs: [set-variables, release]
+    if: ${{ needs.release.outputs.released == 'true' }}
+    strategy:
+      matrix:
+        python_version: ['3.10']
+    permissions:
+      contents: read
+      pages: read
+    environment: github-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.git-head }}
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          python_version: ${{ matrix.python_version }}
+          debug_enabled: ${{ needs.set-variables.outputs.debug }}
+      - name: Build
+        run: make docs-build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
           path: ./site
 
-
   publish-docs:
     runs-on: ubuntu-latest
-    needs: [build-docs, release]
+    needs: [build-release-docs, release]
     if: ${{ needs.release.outputs.released == 'true' }}
     permissions:
       id-token: write
