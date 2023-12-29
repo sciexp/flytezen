@@ -239,7 +239,7 @@
           # be included whenever possible or it may be necessary to include
           # ref = "main";
           # allRefs = true;
-          ref = "20-nixci";
+          ref = "main";
           # the rev can be omitted transiently in development to track the HEAD
           # of a ref but doing so requires `--impure` image builds (this may
           # already be required for other reasons, e.g. `builtins.getEnv`)
