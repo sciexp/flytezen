@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.5](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** build docs without release ([91fa9ad](https://github.com/sciexp/flytezen/commit/91fa9ad4446a5fbd12ff3df370df7a2b53301435))
+
 ## [1.0.0-beta.4](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2023-12-29)
 
 
