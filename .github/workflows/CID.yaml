@@ -5,10 +5,10 @@ on:
     branches:
       - main
       - beta
-    paths-ignore: ["docs/**", "scripts/**", "**.md", "*", "!pyproject.toml"]
+    paths-ignore: ["docs/**", "scripts/**", "**.md", "*", "!pyproject.toml", "!flake.nix", "!*.lock"]
   pull_request:
     types: [opened, synchronize, labeled, reopened, ready_for_review]
-    paths-ignore: ["docs/**", "scripts/**", "**.md", "*", "!pyproject.toml"]
+    paths-ignore: ["docs/**", "scripts/**", "**.md", "*", "!pyproject.toml", "!flake.nix", "!*.lock"]
   
   workflow_dispatch:
     inputs:
