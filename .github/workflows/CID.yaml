@@ -97,7 +97,7 @@ jobs:
 
   config-workflows:
     needs: [set-variables]
-    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && (contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow)) }}
+    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && (contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow) || github.event_name == 'push') }}
     runs-on: ubuntu-latest
     outputs:
       config-path: ${{ steps.config-output.outputs.path }}
