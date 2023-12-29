@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.2](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** add id-token write permission to deploy-docs ([e6278c3](https://github.com/sciexp/flytezen/commit/e6278c3ceee48f927775bb7f4e94a237b90847b8))
+
 ## 1.0.0-beta.1 (2023-12-29)
 
 
