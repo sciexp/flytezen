@@ -456,6 +456,7 @@ jobs:
     needs: build-docs
     permissions:
       id-token: write
+      pages: write
     environment:
       name: release
       url: ${{ steps.deployment.outputs.page_url }}
