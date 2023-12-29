@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.3](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** add pages write permission to deploy-docs ([5ac96d7](https://github.com/sciexp/flytezen/commit/5ac96d7f817d5ced976d800577d441e3e895c68a))
+
 ## [1.0.0-beta.2](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2023-12-29)
 
 
