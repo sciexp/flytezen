@@ -37,9 +37,11 @@ This provides a zero install demonstration of the supported development environm
 │   │   ├── setup_environment
 │   │   │   └── action.yml
 │   │   └── tag-build-push-container
-│   ├── workflows
+│   ├── disabled
 │   │   ├── CD.yaml
-│   │   ├── CI.yaml
+│   │   └── CI.yaml
+│   ├── workflows
+│   │   ├── CID.yaml
 │   │   ├── build-images.yaml
 │   │   └── labeler.yml
 │   ├── .gitkeep
@@ -54,8 +56,16 @@ This provides a zero install demonstration of the supported development environm
 │   └── tasks.json
 ├── containers
 │   ├── Dockerfile
+│   ├── compose.yaml
 │   ├── gpu.Dockerfile
 │   └── pkg.Dockerfile
+├── docs
+│   ├── notebooks
+│   │   └── text
+│   ├── reference
+│   │   └── flytezen.md
+│   ├── index.md
+│   └── specification.md
 ├── environments
 │   └── conda
 │       ├── conda-linux-64.lock.yml
@@ -87,18 +97,20 @@ This provides a zero install demonstration of the supported development environm
 ├── .envrc
 ├── .example.env
 ├── .gitignore
+├── CHANGELOG.md
 ├── LICENSE
 ├── Makefile
 ├── README.md
 ├── devshell
 ├── flake.lock
 ├── flake.nix
+├── mkdocs.yml
 ├── poetry.lock
 ├── poetry.toml
 ├── pyproject.toml
 └── requirements.txt
 
-18 directories, 58 files
+23 directories, 65 files
 ```
 
 </details>
@@ -112,4 +124,4 @@ This provides a zero install demonstration of the supported development environm
 - [hydra-zen](https://github.com/mit-ll-responsible-ai/hydra-zen)
 - [poetry2nix](https://github.com/nix-community/poetry2nix)
 
-See also [flake.nix](./flake.nix), [pyproject.toml](./pyproject.toml), and [.github](./.github/).
+See also [flake.nix](https://github.com/sciexp/flytezen/tree/main/flake.nix), [pyproject.toml](https://github.com/sciexp/flytezen/tree/main/pyproject.toml), and [.github](https://github.com/sciexp/flytezen/tree/main/.github/).
