@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/sciexp/flytezen/compare/v1.0.0...v1.0.1) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** checkout release git head to publish docs and images ([0369ef4](https://github.com/sciexp/flytezen/commit/0369ef45fd5e4369e9d6cc4f00081a7e209a7f5e))
+
 ## 1.0.0 (2023-12-29)
 
 
