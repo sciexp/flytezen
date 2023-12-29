@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.0-beta.4](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** set docs environment to github-pages ([152ba1e](https://github.com/sciexp/flytezen/commit/152ba1e5075e89fcd5b4c406d2f6d0fb8fcb9414))
+* **docs:** update tree in README ([b96787a](https://github.com/sciexp/flytezen/commit/b96787a56ec2be3f580dabc38c94e59f5132358d))
+* **make:** exclude site from tree target ([d585941](https://github.com/sciexp/flytezen/commit/d585941b3454fa99945854b91f253c1b03f9c39a))
+
 ## [1.0.0-beta.3](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2023-12-29)
 
 
