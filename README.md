@@ -12,7 +12,7 @@ See `make | grep codespace`, run `make codespace_create code`, or
 
 [![codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/?hide_repo_select=true&ref=main&repo=723447526&skip_quickstart=true&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json)
 
-This is almost exclusively intended for a zero install demonstration of the supported development environment that depends upon the [nix](https://nixos.org/) package manager or open container images built with it. See `make | grep nix` or `make -n setup_dev` for the non-zero install approach.
+This provides a zero install demonstration of the supported development environment that depends on the [nix](https://nixos.org/) package manager or open container images built with it. See `make | grep nix` or `make -n setup_dev` to setup a local copy of this environment.
 
 ## Layout
 
@@ -105,15 +105,11 @@ This is almost exclusively intended for a zero install demonstration of the supp
 
 ## Acknowledgements
 
-<details><summary>selected dependencies</summary>
-<p>
+### Selected dependencies
 
-* [flocken](https://github.com/mirkolenz/flocken)
-* [flytekit](https://github.com/flyteorg/flytekit)
-* [hydra-zen](https://github.com/mit-ll-responsible-ai/hydra-zen)
-* [poetry2nix](https://github.com/nix-community/poetry2nix)
+- [flocken](https://github.com/mirkolenz/flocken)
+- [flytekit](https://github.com/flyteorg/flytekit)
+- [hydra-zen](https://github.com/mit-ll-responsible-ai/hydra-zen)
+- [poetry2nix](https://github.com/nix-community/poetry2nix)
 
 see also [flake.nix](./flake.nix), [pyproject.toml](./pyproject.toml), [.github](./.github/), and all of the core tools there and above are built upon
-
-</p>
-</details>
