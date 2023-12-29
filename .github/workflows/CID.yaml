@@ -434,6 +434,10 @@ jobs:
       strategy:
         matrix:
           python_version: ['3.10']
+      permissions:
+        contents: read
+        pages: read
+      environment: github-pages
       steps:
         - uses: actions/checkout@v4
           with:
@@ -458,7 +462,7 @@ jobs:
       id-token: write
       pages: write
     environment:
-      name: release
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
