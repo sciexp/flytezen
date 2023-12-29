@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.6](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** remove tag-based conditions on config-workflows ([8c9f169](https://github.com/sciexp/flytezen/commit/8c9f169a37589cd7058347296ff88dcc67f1a17a))
+
 ## [1.0.0-beta.5](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2023-12-29)
 
 
