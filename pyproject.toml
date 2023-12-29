@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flytezen"
-version = "1.0.0b6"
+version = "1.0.0b7"
 packages = [
     { include = "flytezen", from = "src" },
 ]

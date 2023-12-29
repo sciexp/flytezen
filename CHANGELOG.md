@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.7](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2023-12-29)
+
+
+### Bug Fixes
+
+* **CID:** remove branch condition on PR run ([c2a006c](https://github.com/sciexp/flytezen/commit/c2a006c89c9b9f7b40bb6b9a9222fb230d8d319b))
+
 ## [1.0.0-beta.6](https://github.com/sciexp/flytezen/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2023-12-29)
 
 
