@@ -1,0 +1,65 @@
+site_name: flytezen
+site_description: Library for hydra-zen configuration of Flyte workflow execution.
+
+repo_url: https://github.com/sciexp/flytezen
+repo_name: sciexp/flytezen
+
+theme:
+    name: material
+    icon:
+        logo: material/library
+    palette:
+        - media: "(prefers-color-scheme: light)"
+          scheme: default
+          primary: blue grey
+          accent: deep orange
+          toggle:
+            icon: material/brightness-7
+            name: Switch to dark mode
+
+        - media: "(prefers-color-scheme: dark)"
+          scheme: slate
+          primary: blue grey
+          accent: deep orange
+          toggle:
+            icon: material/brightness-4
+            name: Switch to light mode
+
+markdown_extensions:
+    - toc:
+        permalink: true
+    - pymdownx.highlight:
+        anchor_linenums: true
+    - pymdownx.tasklist:
+        custom_checkbox: true
+    - pymdownx.inlinehilite
+    - pymdownx.snippets
+    - pymdownx.superfences
+
+plugins:
+    - search
+    - mkdocstrings:
+        handlers:
+            python:
+                import:
+                    - https://docs.python.org/3.10/objects.inv
+                options:
+                    docstring_style: google
+    - mkdocs-jupyter:
+        ignore_h1_titles: False
+        show_input: True
+        include: ["*.ipynb"]
+        # ignore: ["docs/notebooks/exclude.ipynb"]
+        execute: False
+        include_source: True
+
+watch:
+    - docs
+    - src/flytezen
+    - README.md
+
+nav:
+    - About: index.md
+    - Reference:
+        - flytezen: reference/flytezen.md
+    - Specification: specification.md
