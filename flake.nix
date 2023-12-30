@@ -200,6 +200,18 @@
           EOF
         '';
 
+        customNixConf = pkgs.runCommand "custom-nix-conf" {} ''
+          mkdir -p $out/etc/nix
+          cat > $out/etc/nix/nix.conf <<EOF
+          build-users-group = nixbld
+          experimental-features = nix-command flakes repl-flake
+          bash-prompt-prefix = (nix:\$name)\040
+          max-jobs = auto
+          extra-nix-path = nixpkgs=flake:nixpkgs
+          trusted-users = root
+          EOF
+        '';
+
         devPackages = with pkgs; [
           atuin
           bat
@@ -239,7 +251,7 @@
           # be included whenever possible or it may be necessary to include
           # ref = "main";
           # allRefs = true;
-          ref = "main";
+          ref = "26-nix-profile";
           # the rev can be omitted transiently in development to track the HEAD
           # of a ref but doing so requires `--impure` image builds (this may
           # already be required for other reasons, e.g. `builtins.getEnv`)
@@ -285,6 +297,7 @@
             paths = sysPackages;
             pathsToLink = "/bin";
           })
+          customNixConf
           rcRoot
           packageGitRepoToContainer
         ];
@@ -301,7 +314,7 @@
           User = "root";
           WorkingDir = "/root";
           Env = [
-            "PATH=${pkgs.lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}"
+            "PATH=${pkgs.lib.makeBinPath (sysPackages ++ devPackages ++ pythonPackages)}:/root/.nix-profile/bin"
             "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
             "NIX_PAGER=cat"
             "USER=root"
