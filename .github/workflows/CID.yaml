@@ -434,7 +434,6 @@ jobs:
     permissions:
       contents: read
       pages: read
-    environment: github-pages
     steps:
       - uses: actions/checkout@v4
         with:
