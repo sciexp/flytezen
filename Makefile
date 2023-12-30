@@ -368,6 +368,11 @@ DEVCONTAINER_IMAGE ?= ghcr.io/sciexp/flytezendev
 drundc: ## Run devcontainer. make drundc DEVCONTAINER_IMAGE=
 	docker run --rm -it $(DEVCONTAINER_IMAGE)
 
+adhocpkgs: ## Install adhoc nix packages. make adhocpkgs ADHOC_NIX_PKGS="gnugrep fzf"
+	nix profile list
+	$(foreach pkg, $(ADHOC_NIX_PKGS), nix profile install nixpkgs#$(pkg);)
+	nix profile list
+
 .PHONY: jupyter
 jupyter: ## Run jupyter lab in devcontainer. make jupyter DEVCONTAINER_IMAGE=ghcr.io/sciexp/flytezendev@sha256:055bb57be472144bb140e20870320da8d9fa39daf69a57d2464596b974d34138
 	@echo "Attempting to start jupyter lab in"
