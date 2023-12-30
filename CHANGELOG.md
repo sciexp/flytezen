@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.3](https://github.com/sciexp/flytezen/compare/v1.0.2...v1.0.3) (2023-12-30)
+
+
+### Bug Fixes
+
+* **CID:** remove environment from test-docs-build job ([0544de1](https://github.com/sciexp/flytezen/commit/0544de18e6aac0545ddc3ac1bb3df65dd5ff8d35))
+* **flake:** customize nix conf in devcontainer ([d44c3f3](https://github.com/sciexp/flytezen/commit/d44c3f368a572112df67e98c36d439f43b4d8531))
+* **make:** add target adhocpkgs ([#27](https://github.com/sciexp/flytezen/issues/27)) ([03232a1](https://github.com/sciexp/flytezen/commit/03232a1eea80ddf005e4248e9f80029afda0b5dc))
+
 ## [1.0.2](https://github.com/sciexp/flytezen/compare/v1.0.1...v1.0.2) (2023-12-29)
 
 
