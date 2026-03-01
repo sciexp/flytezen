@@ -242,7 +242,7 @@ jobs:
           extra-conf: |
             extra-platforms = aarch64-linux
       - uses: DeterminateSystems/magic-nix-cache-action@v2
-      - uses: rlespinasse/github-slug-action@v4
+      - uses: rlespinasse/github-slug-action@v5
         with:
           prefix: CI_
       - name: Set git variables
@@ -381,7 +381,7 @@ jobs:
           extra-conf: |
             extra-platforms = aarch64-linux
       - uses: DeterminateSystems/magic-nix-cache-action@v2
-      - uses: rlespinasse/github-slug-action@v4
+      - uses: rlespinasse/github-slug-action@v5
         with:
           prefix: CI_
       - name: Set git variables
